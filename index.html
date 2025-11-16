@@ -1,522 +1,363 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>タイムアタッククイズ</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="utf-8">
+  <title>Modular Minesweeper</title>
+  <style>
+
+   :root {
+  --cell: 40px;
+  --bg: #171a24;
+  --panel: #2a2c31;
+  --text: #e6e6e6;
+  --accent: #4cc2ff;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: sans-serif;
+}
+
+.wrap {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 0 12px;
+}
+
+.settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.board {
+  display: grid;
+  gap: 2px;
+  background: #0003;
+  padding: 6px;
+  border-radius: 8px;
+}
+#hintRate {
+  width: 100px;   /* 横幅 */
+  accent-color: #3d4dcb; /* スライダーの色（モダンブラウザ対応） */
+}
+
+.cell {
+  width: var(--cell);
+  height: var(--cell);
+  flex-wrap: wrap;  
+  /* 折り返し可能に */
+  font-size: 1.2em;
+ line-height: 1.2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #3469ff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  user-select: none;
+}
+
+.cell.open {
+  background: #1b1b28;
+}
+
+.cell.mine {
+  background: #6a1d2b;
+  color: white;
+}
+
+.cell span {
+  width: 45%;          /* 2列に収める */
+  text-align: center;
+}
+.cell.Superlonglong-text {
+      transform: scale(0.75);
+  transform-origin: center;
+  font-size: 0.1em; /* 文字が長いとき */
+    word-break: break-all;
+  white-space: normal;
+  line-height: 7em;
+
+}
+.cell.Superlong-text {
+    transform: scale(0.9);
+  transform-origin: center;
+
+  font-size: 0.15em; /* 文字が長いとき */
+}
+.cell.long-text {
+  word-break: nowrap;
+  font-size: 0.83em; /* 文字が長いとき */
+}
+
+.hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--panel);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.opt {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+.cell.light { background: #69697F; }
+.cell.dark  { background: #3469ff; }
+.cell.open.light { background: #1b1b28; }
+.cell.open.dark  { background: #152491; }
+#boardWrapper { position: relative; display: inline-block; }
+
+.overlay {
+  position: absolute;   /* ← fixed から absolute に変更 */
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+.overlay.hidden { display: none; }
+.overlay .message {
+  background:#222;
+  color:#fff;
+  padding:20px 40px;
+  font-size:2em;
+  border-radius:10px;
+}
+
+
+.overlay.hidden { display: none; }
+
+.card {
+  background: #222;
+  color: #fff;
+  padding: 20px 30px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+}
+.card .title {
+  font-size: 1.5em;
+  margin-bottom: 15px;
+}
+.card .buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.card button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #4cafef;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.card button:hover {
+  background: #2196f3;
+}
+.cell.highlight {
+  outline: 2.5px solid rgba(255, 255, 0, 0.836);
+  outline-offset: -2px;
+}
+
+.cell.origin {
+  background-color: rgba(203, 88, 88, 0.4);
+}
+.error {
+  color: red;
+  font-weight: bold;
+  margin: 5px;
+}
+.hidden {
+  display: none;
+}
+
+.grid-cell {
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: space-evenly;
+    gap: 0.1;
+    flex-wrap: wrap;
+    font-size: 0.2em;
+    align-content: flex-start;
+    align-items: flex-start;
+}
+
+.grid-cell span {
+  display: inline-block;
+  min-width: 0.6em;           /* 数字や記号ごとに余白 */
+  text-align: center;
+    white-space: pre;
+}
+#explore {
+  height: auto;
+  width: auto;
+  column-count: 2;
+}
+</style>
 </head>
 <body>
-    <div id="root"></div>
+  <div class="wrap">
+    <h1>マインスイーパー（拡張版）</h1>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        const { Clock, Trophy, RotateCcw, Crown, User, Medal } = lucide;
+    <!-- 設定パネル -->
 
-        const QuizGame = () => {
-            const [currentQuestion, setCurrentQuestion] = useState(0);
-            const [score, setScore] = useState(0);
-            const [timeLeft, setTimeLeft] = useState(10);
-            const [gameState, setGameState] = useState('ready');
-            const [selectedAnswer, setSelectedAnswer] = useState(null);
-            const [isCorrect, setIsCorrect] = useState(null);
-            const [startTime, setStartTime] = useState(null);
-            const [previewTime, setPreviewTime] = useState(2.5);
-            const [pointsEarned, setPointsEarned] = useState(0);
-            const [playerName, setPlayerName] = useState('');
-            const [rankings, setRankings] = useState([]);
-            const [loading, setLoading] = useState(false);
+    <form id="settings" class="settings">
+  <label>縦 <input id="rows" type="number" min="2" max="99" value="10"></label>
+  <label>横 <input id="cols" type="number" min="2" max="99" value="10"></label>
+  <label>地雷 <input id="mines" type="number" min="0" max="256" value="10"></label>
+      <label>配置
+        <select id="placement">
+              <optgroup label="基本設置">
+          <option value="random">ランダム</option>
+          <option value="cluster">クラスター</option>
+          <option value="noDiagonal">斜め禁止</option>
+          <option value="noOrthogonal">縦横禁止</option>
+          <option value="noThree">3連禁止</option>
+          <option value="Path">道</option>
+          <option value="NoIsolated">孤立禁止</option>
+          <option value="Continent">大陸</option>
+          </optgroup>
+          <optgroup label="制限設置">
+            <option value="pair">ペア</option>
+            <option value="rowcolfixed">行・列固定</option>
+            <option value="bridge">ブリッジ</option>
+            <option value="ThreeInRow">3連のみ</option>
+            <option value="QuadrantEqual">4分割</option>
+            <option value="ColorBalanced">色ごと</option>
+            <option value="NoTouch">ぼっち</option>
 
-            // GitHub Pages用の設定
-            const GITHUB_USERNAME = 'hirudoido'; // ここを自分のGitHubユーザー名に変更
-            const REPO_NAME = 'quiz-rankingDEMO-app'; // ここを自分のリポジトリ名に変更
-            const GITHUB_TOKEN = ''; // 後で設定
+            </optgroup>
+        </select>
+      </label>
+ <label>探索
+  <select id="explore">
+    <optgroup label="基本探索">
+    <option value="normal8">8方向(3*3)</option>
+    <option value="big25">8方向(5*5)</option>
+    <option value="knight">ナイト</option>
+    <option value="queen">クイーン視線</option>
+    <option value="Cross1">十字架(1)</option>
+    <option value="Cross2">十字架(2)</option>
+    <option value="colorAxis">縦横に交互に</option>
+    <option value="colorAxisDiagonal">縦横,斜めに交互に</option>
+    <option value="Ring">リング</option>
+    <option value="Diamond">菱形</option>
+    <option value="Global">全範囲</option>
+    </optgroup>
+    <optgroup label="特殊探索">
+    <option value="untilMine">直線状に見つかるまで</option>
+    <option value="expandUntilMine">波紋状に見つかるまで</option>
+    <option value="ExpandUntil2MinesTriangle">三角状に見つかるまで(2)</option>
+    <option value="clusterDetect">固まり検出</option>
+    <option value="RippleChain">地雷から地雷に接続</option>
+    <option value="Ripple">地雷数による波紋</option>
+    <option value="SquareMineCount">地雷数による正方形(2)</option>
+    <option value="DiamondMineCount">地雷数による菱形(+2)</option>
+  </select>
+</label>
 
-            const questions = [
-                {
-                    image: "🍎", 
-                    question: "この果物は何ですか？",
-                    options: ["りんご", "みかん"],
-                    correct: 0
-                },
-                {
-                    image: "🐱",
-                    question: "この動物は何ですか？",
-                    options: ["いぬ", "ねこ"],
-                    correct: 1
-                },
-                {
-                    image: "🚗",
-                    question: "これは何ですか？",
-                    options: ["くるま", "でんしゃ"],
-                    correct: 0
-                },
-                {
-                    image: "🌞",
-                    question: "これは何ですか？",
-                    options: ["つき", "たいよう"],
-                    correct: 1
-                },
-                {
-                    image: "📚",
-                    question: "これは何ですか？",
-                    options: ["ほん", "ぺん"],
-                    correct: 0
-                }
-            ];
+<label>表示
+  <select id="number">
+        <optgroup label="基本表示">
+    <option value="total">総数</option>
+    <option value="qmark">クエスチョン</option>
+    <option value="fuzzy">ファジー</option>
+    <option value="colorDiff">色別の差</option>
+    <option value="ColorWeight">色別加重</option>
+    <option value="mod3">余り3</option>
+    <option value="mod10">余り10</option>
+    <option value="EvenOdd">偶数</option>
+    <option value="Odd">奇数</option>
+    <option value="prime">素数</option>
+    <option value="PrimeOnly">素数以外</option>
+    <option value="distanceSum">距離の合計</option>
+    <option value="distanceProduct">距離の積</option>
+    <option value="NearestTwoProduct">2点からの距離</option>
+       <option value="NeighborAverage">周りの平均値</option>
+    </optgroup>
+    <optgroup label="数多の表示">
+    <option value="colorSplit">色別</option>
+    <option value="cluster">固まり</option>
+    <option value="clusterMazMin">固まり最大 最小</option>
+    <option value="range3">3区間まとめ表示</option>
+    <option value="decompose">分解</option> 
+    <option value="TruthLie">真偽</option>
+ 
+    </optgroup>
+  </select>
+  <label>ヒント率
+  <input id="hintRate" type="range" min="0" max="100" value="0">
+  <span id="hintRateValue">0%</span>
+</label>
+<script>
+  document.getElementById("hintRate").addEventListener("input", e => {
+    document.getElementById("hintRateValue").textContent = e.target.value + "%";
+  });
 
-            // ランキング読み込み
-            useEffect(() => {
-                loadRankings();
-            }, []);
+</script>
+</label>
+      <button type="submit">開始</button>
+        <button type="button" id="startRandom">ランダムシードで開始</button>
+        <button type="button" id="startRandomRule">ルールもランダムで開始</button>
+        
 
-            const loadRankings = async () => {
-                try {
-                    const response = await fetch(`https://${GITHUB_USERNAME}.github.io/${REPO_NAME}/rankings.json`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        setRankings(data);
-                    } else {
-                        // ファイルが見つからない場合は初期データを使用
-                        setRankings([
-                            { name: "クイズマスター", score: 485, date: "2025-06-20" },
-                            { name: "スピードキング", score: 467, date: "2025-06-21" },
-                            { name: "ひらめき太郎", score: 445, date: "2025-06-19" },
-                            { name: "思考の達人", score: 423, date: "2025-06-22" },
-                            { name: "知識の女王", score: 398, date: "2025-06-18" }
-                        ]);
-                    }
-                } catch (error) {
-                    console.error('ランキング読み込みエラー:', error);
-                    // エラー時は初期データを使用
-                    setRankings([
-                        { name: "クイズマスター", score: 485, date: "2025-06-20" },
-                        { name: "スピードキング", score: 467, date: "2025-06-21" },
-                        { name: "ひらめき太郎", score: 445, date: "2025-06-19" },
-                        { name: "思考の達人", score: 423, date: "2025-06-22" },
-                        { name: "知識の女王", score: 398, date: "2025-06-18" }
-                    ]);
-                }
-            };
+    </form>
 
-            // ランキング更新（GitHub API使用）
-            const updateRankings = async (newRankings) => {
-                if (!GITHUB_TOKEN || GITHUB_TOKEN === 'YOUR_GITHUB_TOKEN') {
-                    alert('GitHub Tokenが設定されていません。ランキングはローカルでのみ保存されます。');
-                    setRankings(newRankings);
-                    return;
-                }
+<!-- HUD に時間とチート切り替えを追加 -->
+<div class="hud">
+  <span>残り地雷: <span id="mineLeft">0</span></span>
+    <span>未確定: <span id="uncertain">0</span></span> <!-- ★追加 -->
+  <span>サイズ: <span id="size"></span></span>
+  <span>時間: <span id="time">0</span> 秒</span>
+  <label>シード <input type="text" id="seed" value="123456"></label>
+  <label class="opt">
+    <input type="checkbox" id="cheatToggle"> チートモード
+  </label>
+</div>
 
-                setLoading(true);
-                try {
-                    // 現在のファイル情報を取得
-                    const fileResponse = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/rankings.json`, {
-                        headers: {
-                            'Authorization': `token ${GITHUB_TOKEN}`,
-                            'Accept': 'application/vnd.github.v3+json'
-                        }
-                    });
+  
+    <!-- 盤面 -->
+<div id="boardWrapper">
+  <div id="board" class="board"></div>
 
-                    let sha = null;
-                    if (fileResponse.ok) {
-                        const fileData = await fileResponse.json();
-                        sha = fileData.sha;
-                    }
+  <!-- ゲームオーバー -->
+  <div id="gameover" class="overlay hidden">
+    <div class="card">
+      <div class="title">💥 GAME OVER 💥</div>
+      <div class="buttons">
+        <button id="retrySame">同じシードでリトライ</button>
+        <button id="retryNew">違うシードでリトライ</button>
+      </div>
+    </div>
+  </div>
 
-                    // ファイルを更新
-                    const content = btoa(JSON.stringify(newRankings, null, 2));
-                    const updateResponse = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/rankings.json`, {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `token ${GITHUB_TOKEN}`,
-                            'Accept': 'application/vnd.github.v3+json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            message: 'Update rankings',
-                            content: content,
-                            sha: sha
-                        })
-                    });
-
-                    if (updateResponse.ok) {
-                        setRankings(newRankings);
-                        alert('ランキングが更新されました！');
-                    } else {
-                        throw new Error('ランキング更新に失敗しました');
-                    }
-                } catch (error) {
-                    console.error('ランキング更新エラー:', error);
-                    alert('ランキング更新に失敗しました。ローカルでのみ保存されます。');
-                    setRankings(newRankings);
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            useEffect(() => {
-                let timer;
-                if (gameState === 'preview' && previewTime > 0) {
-                    timer = setTimeout(() => {
-                        setPreviewTime(previewTime - 0.1);
-                    }, 100);
-                } else if (previewTime <= 0 && gameState === 'preview') {
-                    setGameState('playing');
-                    setStartTime(Date.now());
-                }
-                return () => clearTimeout(timer);
-            }, [previewTime, gameState]);
-
-            useEffect(() => {
-                let timer;
-                if (gameState === 'playing' && timeLeft > 0) {
-                    timer = setTimeout(() => {
-                        setTimeLeft(timeLeft - 1);
-                    }, 1000);
-                } else if (timeLeft === 0 && gameState === 'playing') {
-                    handleAnswer(null, true);
-                }
-                return () => clearTimeout(timer);
-            }, [timeLeft, gameState]);
-
-            const startGame = () => {
-                setCurrentQuestion(0);
-                setScore(0);
-                setSelectedAnswer(null);
-                setIsCorrect(null);
-                setPointsEarned(0);
-                setPlayerName('');
-                setGameState('preview');
-                setPreviewTime(2.5);
-                setTimeLeft(10);
-            };
-
-            const calculatePoints = (isCorrect, responseTime, isTimeout = false) => {
-                if (isTimeout) {
-                    return -50;
-                }
-                
-                if (isCorrect) {
-                    return Math.max(10, Math.round(100 - (responseTime * 9)));
-                } else {
-                    return Math.min(-10, Math.round(-50 + (responseTime * 4)));
-                }
-            };
-
-            const handleAnswer = (answerIndex, isTimeout = false) => {
-                if (gameState !== 'playing') return;
-
-                const question = questions[currentQuestion];
-                const correct = !isTimeout && answerIndex === question.correct;
-                const responseTime = isTimeout ? 10 : (Date.now() - startTime) / 1000;
-                
-                setSelectedAnswer(answerIndex);
-                setIsCorrect(correct);
-                setGameState('answered');
-
-                const points = calculatePoints(correct, responseTime, isTimeout);
-                setPointsEarned(points);
-                setScore(score + points);
-
-                setTimeout(() => {
-                    if (currentQuestion < questions.length - 1) {
-                        setCurrentQuestion(currentQuestion + 1);
-                        setTimeLeft(10);
-                        setPreviewTime(2.5);
-                        setSelectedAnswer(null);
-                        setIsCorrect(null);
-                        setPointsEarned(0);
-                        setGameState('preview');
-                        setStartTime(null);
-                    } else {
-                        if (isRankingWorthy(score + points)) {
-                            setGameState('nameInput');
-                        } else {
-                            setGameState('finished');
-                        }
-                    }
-                }, 2500);
-            };
-
-            const isRankingWorthy = (finalScore) => {
-                return finalScore >= 100 || rankings.length < 10 || finalScore > Math.min(...rankings.map(r => r.score));
-            };
-
-            const addToRanking = () => {
-                if (!playerName.trim()) return;
-                
-                const newEntry = {
-                    name: playerName.trim(),
-                    score: score,
-                    date: new Date().toISOString().split('T')[0]
-                };
-
-                const newRankings = [...rankings, newEntry]
-                    .sort((a, b) => b.score - a.score)
-                    .slice(0, 10);
-
-                updateRankings(newRankings);
-                setGameState('finished');
-            };
-
-            const resetGame = () => {
-                setCurrentQuestion(0);
-                setScore(0);
-                setTimeLeft(10);
-                setPreviewTime(2.5);
-                setGameState('ready');
-                setSelectedAnswer(null);
-                setIsCorrect(null);
-                setStartTime(null);
-                setPointsEarned(0);
-                setPlayerName('');
-            };
-
-            const showRanking = () => {
-                setGameState('ranking');
-            };
-
-            const backToMenu = () => {
-                setGameState('ready');
-            };
-
-            const getScoreColor = () => {
-                if (score >= 300) return 'text-green-600';
-                if (score >= 150) return 'text-blue-600';
-                if (score >= 0) return 'text-gray-700';
-                return 'text-red-600';
-            };
-
-            const getRankIcon = (rank) => {
-                if (rank === 1) return React.createElement(Crown, { className: "text-yellow-500", size: 20 });
-                if (rank === 2) return React.createElement(Medal, { className: "text-gray-400", size: 20 });
-                if (rank === 3) return React.createElement(Medal, { className: "text-orange-600", size: 20 });
-                return React.createElement('span', { className: "text-gray-600 font-bold" }, rank);
-            };
-
-            const renderImage = (question) => {
-                return React.createElement('div', { className: "text-8xl" }, question.image);
-            };
-
-            // ランキング画面
-            if (gameState === 'ranking') {
-                return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center p-4" },
-                    React.createElement('div', { className: "bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full" },
-                        React.createElement('div', { className: "text-center mb-6" },
-                            React.createElement(Trophy, { className: "mx-auto text-yellow-500 mb-4", size: 64 }),
-                            React.createElement('h1', { className: "text-3xl font-bold text-gray-800" }, "🌍 世界ランキング")
-                        ),
-                        React.createElement('div', { className: "space-y-3 mb-6 max-h-96 overflow-y-auto" },
-                            rankings.map((entry, index) =>
-                                React.createElement('div', { 
-                                    key: index, 
-                                    className: `flex items-center justify-between p-3 rounded-lg ${
-                                        index < 3 ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200' : 'bg-gray-50'
-                                    }`
-                                },
-                                    React.createElement('div', { className: "flex items-center gap-3" },
-                                        getRankIcon(index + 1),
-                                        React.createElement('div', null,
-                                            React.createElement('div', { className: "font-bold text-gray-800" }, entry.name),
-                                            React.createElement('div', { className: "text-xs text-gray-500" }, entry.date)
-                                        )
-                                    ),
-                                    React.createElement('div', { className: "text-lg font-bold text-blue-600" }, entry.score + "点")
-                                )
-                            )
-                        ),
-                        React.createElement('button', {
-                            onClick: backToMenu,
-                            className: "w-full bg-gradient-to-r from-gray-500 to-gray-600 text-white font-bold py-3 px-6 rounded-full hover:from-gray-600 hover:to-gray-700 transition-all duration-200"
-                        }, "メニューに戻る")
-                    )
-                );
-            }
-
-            // 名前入力画面
-            if (gameState === 'nameInput') {
-                return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center p-4" },
-                    React.createElement('div', { className: "bg-white rounded-2xl shadow-2xl p-8 text-center max-w-md w-full" },
-                        React.createElement(Trophy, { className: "mx-auto text-yellow-500 mb-4", size: 64 }),
-                        React.createElement('h1', { className: "text-2xl font-bold text-gray-800 mb-2" }, "🎉 ランキング入り！"),
-                        React.createElement('p', { className: "text-lg text-blue-600 font-bold mb-6" }, "スコア: " + score + "点"),
-                        React.createElement('div', { className: "mb-6" },
-                            React.createElement('label', { className: "block text-gray-700 font-bold mb-2" }, "あなたの名前を入力してください"),
-                            React.createElement('div', { className: "relative" },
-                                React.createElement(User, { className: "absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400", size: 20 }),
-                                React.createElement('input', {
-                                    type: "text",
-                                    value: playerName,
-                                    onChange: (e) => setPlayerName(e.target.value),
-                                    placeholder: "ニックネーム（10文字以内）",
-                                    maxLength: 10,
-                                    className: "w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-full focus:border-blue-500 focus:outline-none text-center font-bold",
-                                    onKeyPress: (e) => e.key === 'Enter' && addToRanking()
-                                })
-                            )
-                        ),
-                        React.createElement('div', { className: "space-y-3" },
-                            React.createElement('button', {
-                                onClick: addToRanking,
-                                disabled: !playerName.trim() || loading,
-                                className: `w-full font-bold py-3 px-6 rounded-full transition-all duration-200 ${
-                                    playerName.trim() && !loading
-                                        ? 'bg-gradient-to-r from-green-500 to-blue-600 text-white hover:from-green-600 hover:to-blue-700 transform hover:scale-105'
-                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                }`
-                            }, loading ? "更新中..." : "ランキングに登録"),
-                            React.createElement('button', {
-                                onClick: () => setGameState('finished'),
-                                className: "w-full bg-gray-200 text-gray-600 font-bold py-2 px-6 rounded-full hover:bg-gray-300 transition-all duration-200"
-                            }, "スキップ")
-                        )
-                    )
-                );
-            }
-
-            // メイン画面
-            if (gameState === 'ready') {
-                return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center p-4" },
-                    React.createElement('div', { className: "bg-white rounded-2xl shadow-2xl p-8 text-center max-w-md w-full" },
-                        React.createElement(Trophy, { className: "mx-auto text-yellow-500 mb-4", size: 64 }),
-                        React.createElement('h1', { className: "text-3xl font-bold text-gray-800 mb-4" }, "タイムアタッククイズ"),
-                        React.createElement('div', { className: "text-left text-sm text-gray-600 mb-6 bg-gray-50 p-4 rounded-lg" },
-                            React.createElement('h3', { className: "font-bold mb-2" }, "ルール："),
-                            React.createElement('ul', { className: "space-y-1" },
-                                React.createElement('li', null, "• 最初2.5秒は画像を観察"),
-                                React.createElement('li', null, "• その後10秒で回答"),
-                                React.createElement('li', null, "• ", React.createElement('span', { className: "text-green-600" }, "正解"), "：早いほど高得点（10-100点）"),
-                                React.createElement('li', null, "• ", React.createElement('span', { className: "text-red-600" }, "間違い"), "：早いほど大きなマイナス（-50〜-10点）"),
-                                React.createElement('li', null, "• ", React.createElement('span', { className: "text-red-600" }, "時間切れ"), "：-50点")
-                            )
-                        ),
-                        React.createElement('div', { className: "space-y-3" },
-                            React.createElement('button', {
-                                onClick: startGame,
-                                className: "w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-3 px-8 rounded-full hover:from-blue-600 hover:to-purple-700 transform hover:scale-105 transition-all duration-200"
-                            }, "ゲーム開始！"),
-                            React.createElement('button', {
-                                onClick: showRanking,
-                                className: "w-full bg-gradient-to-r from-yellow-500 to-orange-600 text-white font-bold py-3 px-8 rounded-full hover:from-yellow-600 hover:to-orange-700 transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
-                            }, 
-                                React.createElement(Crown, { size: 20 }),
-                                "世界ランキングを見る"
-                            )
-                        )
-                    )
-                );
-            }
-
-            if (gameState === 'finished') {
-                return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center p-4" },
-                    React.createElement('div', { className: "bg-white rounded-2xl shadow-2xl p-8 text-center max-w-md w-full" },
-                        React.createElement(Trophy, { className: "mx-auto text-yellow-500 mb-4", size: 64 }),
-                        React.createElement('h1', { className: "text-3xl font-bold text-gray-800 mb-4" }, "ゲーム終了！"),
-                        React.createElement('p', { className: "text-2xl font-bold mb-6" },
-                            "最終スコア: ", React.createElement('span', { className: getScoreColor() }, score + "点")
-                        ),
-                        React.createElement('div', { className: "mb-6 text-gray-600" },
-                            score >= 400 ? "🏆 パーフェクト！神業です！" :
-                            score >= 300 ? "🌟 素晴らしい！" :
-                            score >= 200 ? "👍 とても良い成績！" :
-                            score >= 100 ? "📚 まずまずの成績！" :
-                            score >= 0 ? "💪 もう少し慎重に！" :
-                            "🤔 落ち着いて考えよう！"
-                        ),
-                        React.createElement('div', { className: "space-y-3" },
-                            React.createElement('button', {
-                                onClick: resetGame,
-                                className: "w-full bg-gradient-to-r from-green-500 to-blue-600 text-white font-bold py-3 px-8 rounded-full hover:from-green-600 hover:to-blue-700 transform hover:scale-105 transition-all duration-200 flex items-center gap-2 justify-center"
-                            },
-                                React.createElement(RotateCcw, { size: 20 }),
-                                "もう一度プレイ"
-                            ),
-                            React.createElement('button', {
-                                onClick: showRanking,
-                                className: "w-full bg-gradient-to-r from-yellow-500 to-orange-600 text-white font-bold py-3 px-8 rounded-full hover:from-yellow-600 hover:to-orange-700 transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
-                            },
-                                React.createElement(Crown, { size: 20 }),
-                                "ランキングを見る"
-                            )
-                        )
-                    )
-                );
-            }
-
-            const question = questions[currentQuestion];
-
-            return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center p-4" },
-                React.createElement('div', { className: "bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full" },
-                    React.createElement('div', { className: "flex justify-between items-center mb-6" },
-                        React.createElement('div', { className: "text-sm text-gray-600" },
-                            "問題 " + (currentQuestion + 1) + "/" + questions.length
-                        ),
-                        React.createElement('div', { className: `text-2xl font-bold ${getScoreColor()}` },
-                            score + "点"
-                        )
-                    ),
-                    gameState === 'preview' && React.createElement('div', { className: "text-center mb-6" },
-                        React.createElement('div', { className: "inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-600" },
-                            React.createElement(Clock, { size: 20 }),
-                            React.createElement('span', { className: "text-lg font-bold" }, "観察時間 " + Math.ceil(previewTime) + "秒")
-                        )
-                    ),
-                    gameState === 'playing' && React.createElement('div', { className: "text-center mb-6" },
-                        React.createElement('div', { 
-                            className: `inline-flex items-center gap-2 px-4 py-2 rounded-full ${
-                                timeLeft <= 3 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-green-100 text-green-600'
-                            }`
-                        },
-                            React.createElement(Clock, { size: 20 }),
-                            React.createElement('span', { className: "text-xl font-bold" }, timeLeft + "秒")
-                        )
-                    ),
-                    React.createElement('div', { className: "text-center mb-8" },
-                        React.createElement('div', { className: "mb-4" },
-                            renderImage(question)
-                        ),
-                        React.createElement('h2', { className: "text-xl font-bold text-gray-800" }, question.question)
-                    ),
-                    gameState !== 'preview' && React.createElement('div', { className: "space-y-3" },
-                        question.options.map((option, index) =>
-                            React.createElement('button', {
-                                key: index,
-                                onClick: () => handleAnswer(index),
-                                disabled: gameState === 'answered',
-                                className: `w-full p-4 rounded-xl font-bold text-lg transition-all duration-200 ${
-                                    gameState === 'answered'
-                                        ? selectedAnswer === index
-                                            ? isCorrect
-                                                ? 'bg-green-500 text-white'
-                                                : 'bg-red-500 text-white'
-                                            : index === question.correct
-                                                ? 'bg-green-500 text-white'
-                                                : 'bg-gray-300 text-gray-600'
-                                        : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transform hover:scale-105'
-                                }`
-                            }, option)
-                        )
-                    ),
-                    gameState === 'answered' && React.createElement('div', { className: "mt-4 text-center" },
-                        React.createElement('p', { className: `text-lg font-bold ${isCorrect ? 'text-green-600' : 'text-red-600'}` },
-                            isCorrect ? '正解！🎉' : selectedAnswer === null ? '時間切れ⏰' : '不正解... 😢'
-                        ),
-                        React.createElement('p', { className: `text-sm font-bold ${pointsEarned > 0 ? 'text-green-600' : 'text-red-600'}` },
-                            (pointsEarned > 0 ? '+' : '') + pointsEarned + "点"
-                        ),
-                        !isCorrect && selectedAnswer !== null && React.createElement('p', { className: "text-xs text-gray-500 mt-1" },
-                            "早押しは危険！よく考えてから答えよう"
-                        )
-                    )
-                )
-            );
-        };
-
-        ReactDOM.render(React.createElement(QuizGame), document.getElementById('root'));
-    </script>
+  <!-- クリア -->
+  <div id="gameclear" class="overlay hidden">
+    <div class="card">
+      <div class="title">🎉 YOU WIN! 🎉</div>
+      <div class="buttons">
+        <button id="retrySameClear">同じシードでリトライ</button>
+        <button id="retryNewClear">違うシードでリトライ</button>
+      </div>
+    </div>
+  </div>
+  <!-- エラーメッセージ -->
+  <div id="errorMsg" class="hidden error">地雷配置に失敗しました。設定を見直してください。</div>
+</div>
+  <script src="main2.js"></script>
 </body>
 </html>
