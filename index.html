@@ -46,6 +46,10 @@ body {
 }
 
 .cell {
+  user-select: none;           /* PC・スマホ両方で文字選択を無効化 */
+  -webkit-user-select: none;   /* Safari・iOS対応 */
+  -ms-user-select: none;       /* 古いIE対応（念のため） */
+  touch-action: manipulation;  /* タップ操作の誤反応を防ぐ */
   width: var(--cell);
   height: var(--cell);
   flex-wrap: wrap;  
@@ -59,7 +63,6 @@ body {
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
-  user-select: none;
 }
 
 .cell.open {
