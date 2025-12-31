@@ -281,7 +281,7 @@ d.addEventListener("touchstart", e => {
     this.toggleFlag(cell);   // ★ 長押しで旗
   }, 500); // 0.5秒長押し
 });
-
+/*
 d.addEventListener("touchend", e => {
   clearTimeout(pressTimer);
 
@@ -289,7 +289,7 @@ d.addEventListener("touchend", e => {
   if (!longPress) {
     this.openCell(cell);
   }
-});
+});*/
     // ★ 探索範囲の可視化
 // ハイライト
 d.addEventListener("mouseenter", () => {
