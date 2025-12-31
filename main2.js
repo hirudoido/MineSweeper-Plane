@@ -2395,12 +2395,12 @@ class TruthLieNumberRule extends NumberRule {
     const truth = cell.value;
     let lie;
 
-    if (truth <= 2) {
-      lie = truth + 2; // 1,2 の場合は必ず +2
+    if (truth <= 3) {
+      lie = truth + Math.floor( Math.random() * 2 )+2; // 1,2,3 の場合は必ず +2か3
     } else {
       // それ以外は ±2 のどちらかをランダムに
-      lie = (Math.random() < 0.5) ? truth - 2 : truth + 2;
-      if (lie < 0) lie = truth + 2; // マイナスは避ける
+      lie = (Math.random() < 0.5) ? truth - Math.floor( Math.random() * 2 )+2 : truth + Math.floor( Math.random() * 2 )+2;
+      if (lie < 0) lie = truth + Math.floor( Math.random() * 2 )+2; // マイナスは避ける
     }
 
     // 大きい順に並べる
