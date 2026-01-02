@@ -872,7 +872,157 @@ class NoOrthogonalPlacement extends PlacementStrategy {
     }
   }
 }
+// 4連クラスタを離して配置
+class Cluster4IsolatedPlacement extends PlacementStrategy {
+  place(board, mineCount, rng) {
+    if (mineCount % 4 !== 0) {
+      throw new Error("地雷数は4の倍数である必要があります");
+    }
 
+    const groupCount = mineCount / 4;
+    const placed = new Set();
+
+    let attempts = 0;
+    while (placed.size < mineCount && attempts < 10000) {
+      attempts++;
+
+      // ランダムな位置に2×2の地雷グループを試す
+      const r = Math.floor(rng() * (board.rows - 1));
+      const c = Math.floor(rng() * (board.cols - 1));
+
+      const indices = [
+        r * board.cols + c,
+        r * board.cols + (c + 1),
+        (r + 1) * board.cols + c,
+        (r + 1) * board.cols + (c + 1),
+      ];
+
+      // 接触チェック（縦横方向）
+      let conflict = false;
+      for (const idx of indices) {
+        const cell = board.cells[idx];
+        const neighbors = this._orthogonalNeighbors(board, cell.r, cell.c);
+        for (const nb of neighbors) {
+          if (nb.mine) {
+            conflict = true;
+            break;
+          }
+        }
+        if (conflict) break;
+      }
+
+      if (conflict) continue;
+
+      // 配置
+      for (const idx of indices) {
+        board.cells[idx].mine = true;
+        placed.add(idx);
+      }
+    }
+
+    if (placed.size < mineCount) {
+      throw new Error("地雷配置に失敗しました（空間不足）");
+    }
+  }
+
+  _orthogonalNeighbors(board, r, c) {
+    const out = [];
+    const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+    for (const [dr, dc] of dirs) {
+      const nr = r + dr;
+      const nc = c + dc;
+      if (nr >= 0 && nr < board.rows && nc >= 0 && nc < board.cols) {
+        out.push(board.getCell(nr, nc));
+      }
+    }
+    return out;
+  }
+}
+// テトリスミノ配置
+class TetrisMinoPlacement extends PlacementStrategy {
+  place(board, mineCount, rng) {
+    if (mineCount % 4 !== 0) {
+      throw new Error("地雷数は4の倍数である必要があります（ミノ単位）");
+    }
+
+    const minoCount = mineCount / 4;
+    let placed = 0;
+
+    let attempts = 0;
+    while (placed < minoCount && attempts < 5000) {
+      attempts++;
+
+      // ランダムにミノを選ぶ
+      const keys = Object.keys(TETRIS_MINOS);
+      const key = keys[Math.floor(rng() * keys.length)];
+      let shape = TETRIS_MINOS[key];
+
+      // ランダム回転
+      const rot = Math.floor(rng() * 4);
+      for (let i = 0; i < rot; i++) {
+        shape = rotateShape(shape);
+      }
+
+      // ランダム位置
+      const baseR = Math.floor(rng() * board.rows);
+      const baseC = Math.floor(rng() * board.cols);
+
+      // 実際の座標に変換
+      const cells = shape.map(([dr, dc]) => [baseR + dr, baseC + dc]);
+
+      // 盤面外チェック
+      if (cells.some(([r, c]) =>
+        r < 0 || r >= board.rows || c < 0 || c >= board.cols
+      )) continue;
+
+      // 接触禁止チェック（縦横）
+      let conflict = false;
+      for (const [r, c] of cells) {
+        const nb = this._orthNeighbors(board, r, c);
+        if (nb.some(n => n.mine)) {
+          conflict = true;
+          break;
+        }
+      }
+      if (conflict) continue;
+
+      // 配置
+      for (const [r, c] of cells) {
+        board.getCell(r, c).mine = true;
+      }
+
+      placed++;
+    }
+
+    if (placed < minoCount) {
+      throw new Error("ミノ配置に失敗しました（空間不足）");
+    }
+  }
+
+  _orthNeighbors(board, r, c) {
+    const out = [];
+    const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+    for (const [dr, dc] of dirs) {
+      const nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < board.rows && nc >= 0 && nc < board.cols) {
+        out.push(board.getCell(nr, nc));
+      }
+    }
+    return out;
+  }
+}
+const TETRIS_MINOS = {
+  O: [ [0,0], [0,1], [1,0], [1,1] ],
+  I: [ [0,0], [1,0], [2,0], [3,0] ],
+  T: [ [0,1], [1,0], [1,1], [1,2] ],
+  L: [ [0,0], [1,0], [2,0], [2,1] ],
+  J: [ [0,1], [1,1], [2,1], [2,0] ],
+  S: [ [0,1], [0,2], [1,0], [1,1] ],
+  Z: [ [0,0], [0,1], [1,1], [1,2] ]
+};
+function rotateShape(shape) {
+  return shape.map(([r, c]) => [c, -r]);
+}
 //探索範囲  の実装
 // 8方向探索（標準マインスイーパー）
 class Normal8Explore extends ExploreStrategy {
@@ -2142,7 +2292,10 @@ const placementMap = {
  Path:PathPlacement,
 ColorBalanced:ColorBalancedPlacement,
 NoTouch:NoTouchPlacement,
-noOrthogonal: NoOrthogonalPlacement
+noOrthogonal: NoOrthogonalPlacement,
+Cluster4Isolated:Cluster4IsolatedPlacement,
+TetrisMino:TetrisMinoPlacement
+
 };
 
 const exploreMap = {

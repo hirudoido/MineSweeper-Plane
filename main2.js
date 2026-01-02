@@ -25,8 +25,8 @@ function normalizeMinesForRule(rows, cols, mines, placementKey) {
     if (mines === 4) return 5;
   }
 
-  //4分割
-if (placementKey==="QuadrantEqual"){
+  //4分割 4の倍数に丸める
+if (placementKey==="QuadrantEqual"||placementKey==="Cluster4Isolated"||placementKey==="TetrisMino") {
 document.getElementById("rows").value=(Math.round(rows /2) * 2);
 document.getElementById("cols").value=(Math.round(cols /2) * 2);
 console.log(Math.round(mines /4) * 4);
