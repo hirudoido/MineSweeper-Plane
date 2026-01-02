@@ -1833,7 +1833,7 @@ class ColorDiffNumberRule extends NumberRule {
     }
     return diff;
   }
-
+  
   render(cell) {
     if (cell.value === null) return ""; // 検知なしは空白
     return String(cell.value);          // 0 も数字もそのまま表示
@@ -2345,5 +2345,37 @@ const numberMap = {
   PrimeOnly:PrimeOnlyNumberRule
 };
 
+class SafeNumberRule extends NumberRule {
 
+  calculate(cell, neighbors) {
+    // 子クラスが calculate を実装している前提
+    const v = super.calculate ? super.calculate(cell, neighbors) : 0;
+
+    // NaN や undefined を完全に排除
+    if (typeof v !== "number" || Number.isNaN(v)) {
+      return 0;
+    }
+    return v;
+  }
+
+  render(cell) {
+    let out;
+
+    try {
+      out = super.render ? super.render(cell) : cell.value;
+    } catch (e) {
+      out = "";
+    }
+
+    // null / undefined / NaN を完全に排除
+    if (out === null || out === undefined) return "";
+    if (typeof out === "number" && Number.isNaN(out)) return "";
+    return String(out);
+  }
+
+  isZero(cell) {
+    // NaN でも誤爆しない
+    return (typeof cell.value === "number" && cell.value === 0);
+  }
+}
 
