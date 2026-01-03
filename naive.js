@@ -1023,6 +1023,72 @@ const TETRIS_MINOS = {
 function rotateShape(shape) {
   return shape.map(([r, c]) => [c, -r]);
 }
+
+class LightningPlacement extends PlacementStrategy {
+  place(board, mineCount, rng, excludeIndex = -1) {
+    const total = board.rows * board.cols;
+
+    // スタート地点（上側から選ぶと雷っぽい）
+    let startR = Math.floor(rng() * Math.min(3, board.rows));
+    let startC = Math.floor(rng() * board.cols);
+    let current = board.getCell(startR, startC);
+
+    current.mine = true;
+    let placed = 1;
+
+    const visited = new Set([startR * board.cols + startC]);
+
+    while (placed < mineCount) {
+      const dirs = [
+        [1, 0],   // 下へ
+        [1, 1],   // 右下
+        [1, -1],  // 左下
+        [0, 1],   // 右
+        [0, -1],  // 左
+      ];
+
+      // ランダムに方向を選ぶ
+      const [dr, dc] = dirs[Math.floor(rng() * dirs.length)];
+      const nr = current.r + dr;
+      const nc = current.c + dc;
+
+      // 盤面外なら別方向を試す
+      if (nr < 0 || nc < 0 || nr >= board.rows || nc >= board.cols) continue;
+
+      const next = board.getCell(nr, nc);
+      const idx = nr * board.cols + nc;
+
+      // ループ禁止
+      if (visited.has(idx)) continue;
+
+      // 地雷設置
+      next.mine = true;
+      visited.add(idx);
+      placed++;
+
+      current = next;
+
+      // ★ 分岐（枝）を作る：ランダムで枝を伸ばす
+      if (rng() < 0.15 && placed < mineCount) {
+        const branchDirs = [
+          [0, 1], [0, -1], [1, 0]
+        ];
+        const [br, bc] = branchDirs[Math.floor(rng() * branchDirs.length)];
+        const br2 = nr + br;
+        const bc2 = nc + bc;
+        if (br2 >= 0 && bc2 >= 0 && br2 < board.rows && bc2 < board.cols) {
+          const branchCell = board.getCell(br2, bc2);
+          const bidx = br2 * board.cols + bc2;
+          if (!visited.has(bidx)) {
+            branchCell.mine = true;
+            visited.add(bidx);
+            placed++;
+          }
+        }
+      }
+    }
+  }
+}
 //探索範囲  の実装
 // 8方向探索（標準マインスイーパー）
 class Normal8Explore extends ExploreStrategy {
@@ -2294,7 +2360,8 @@ ColorBalanced:ColorBalancedPlacement,
 NoTouch:NoTouchPlacement,
 noOrthogonal: NoOrthogonalPlacement,
 Cluster4Isolated:Cluster4IsolatedPlacement,
-TetrisMino:TetrisMinoPlacement
+TetrisMino:TetrisMinoPlacement,
+Lightning:LightningPlacement
 
 };
 
@@ -2345,37 +2412,5 @@ const numberMap = {
   PrimeOnly:PrimeOnlyNumberRule
 };
 
-class SafeNumberRule extends NumberRule {
 
-  calculate(cell, neighbors) {
-    // 子クラスが calculate を実装している前提
-    const v = super.calculate ? super.calculate(cell, neighbors) : 0;
-
-    // NaN や undefined を完全に排除
-    if (typeof v !== "number" || Number.isNaN(v)) {
-      return 0;
-    }
-    return v;
-  }
-
-  render(cell) {
-    let out;
-
-    try {
-      out = super.render ? super.render(cell) : cell.value;
-    } catch (e) {
-      out = "";
-    }
-
-    // null / undefined / NaN を完全に排除
-    if (out === null || out === undefined) return "";
-    if (typeof out === "number" && Number.isNaN(out)) return "";
-    return String(out);
-  }
-
-  isZero(cell) {
-    // NaN でも誤爆しない
-    return (typeof cell.value === "number" && cell.value === 0);
-  }
-}
 
