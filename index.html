@@ -210,6 +210,20 @@ body {
   width: auto;
   column-count: 2;
 }
+#attemptCounter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px 30px;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  font-size: 24px;
+  border-radius: 10px;
+  z-index: 9999;
+}
+
+
 </style>
 </head>
 <body>
@@ -334,7 +348,7 @@ body {
     <input type="checkbox" id="cheatToggle"> チートモード
   </label>
 </div>
-
+<div id="attemptCounter" class="hidden">試行中: 0 回</div>
   
     <!-- 盤面 -->
 <div id="boardWrapper">

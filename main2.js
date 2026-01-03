@@ -156,39 +156,45 @@ class Game {
     this.elapsed = 0;
   }
 
-  init() {
-    this.stopTimer();
-    this._startTimer();
+async init() {
+  this.stopTimer();
+  this._startTimer();
 
-    const seed = document.getElementById("seed").value || "123456";
-    const rng = makeRngFromSeed(seed);
+  const seed = document.getElementById("seed").value || "123456";
+  const rng = makeRngFromSeed(seed);
 
-    // 配置リトライ
-    let success = false;
-    for (let attempt = 0; attempt < 5000 && !success; attempt++) {
-      try {
-        this.board = new Board(this.board.rows, this.board.cols);
-        this.placement.place(this.board, this.mineCount, rng);
-        success = true;
-      } catch (e) {
-        console.warn("配置失敗 → リトライ", attempt + 1, e.message);
-      }
+  let success = false;
+  for (let attempt = 0; attempt < 6000 && !success; attempt++) {
+    const counter = document.getElementById("attemptCounter");
+    if (counter) counter.textContent = `試行中: ${attempt + 1}回`;
+
+    // ★ 1フレーム待つことで描画を強制
+    await new Promise(resolve => setTimeout(resolve));
+
+    try {
+      this.board = new Board(this.board.rows, this.board.cols);
+      this.placement.place(this.board, this.mineCount, rng);
+      success = true;
+      console.log(attempt + 1, "回で配置成功");
+    } catch (e) {
+      // リトライ
     }
-    if (!success) {
-      this.stopTimer();
-      document.getElementById("errorMsg").classList.remove("hidden");
-      return;
-    }
-
-    document.getElementById("errorMsg").classList.add("hidden");
-
-    this._calculateNumbers();
-    this._buildBoardUI();
-    this._updateHUD();
-    this._applyHints(rng);
-    this.logBoard();
   }
 
+  if (!success) {
+    this.stopTimer();
+    document.getElementById("errorMsg").classList.remove("hidden");
+    return;
+  }
+
+  document.getElementById("errorMsg").classList.add("hidden");
+
+  this._calculateNumbers();
+  this._buildBoardUI();
+  this._updateHUD();
+  this._applyHints(rng);
+  this.logBoard();
+}
 
   // --- タイマー ---
   _startTimer() {
@@ -510,6 +516,13 @@ function makeRngFromSeed(seedStr) {
 // ====== ゲーム開始処理 ======
 // 外側：UIから呼ばれる唯一の開始関数
 function startGame(seedOverride = null) {
+  document.getElementById("attemptCounter").classList.remove("hidden");
+  document.getElementById("attemptCounter").textContent = "試行中: 0 回";
+
+
+  setTimeout(async () => {  // ← 非同期にするのがポイント
+    // ★ ここから元の startGame の処理
+
     // ★ チートモードを強制オフにする
   const cheatToggle = document.getElementById("cheatToggle");
   cheatToggle.checked = false;
@@ -546,9 +559,13 @@ console.log("startGame params:", rows, cols, mines, placementKey, exploreKey, nu
   const seed = document.getElementById("seed").value;
 
   currentGame = new Game(rows, cols, mines, { placement, explore, number });
-  currentGame.init(seed);
+  await currentGame.init(seed);
 
+    document.getElementById("attemptCounter").classList.add("hidden");
+// ← 完了で非表示
+  }, 50);
 }
+
 
 let currentGame = null;
 // フォーム送信時 → startGame() を呼ぶだけ
@@ -693,7 +710,7 @@ colsInput.step = 1;
   }
 
     // 地雷数の最大値を更新
-console.log(`地雷数ステップを ${step} に設定 (ルール: ${rule})`);
+//console.log(`地雷数ステップを ${step} に設定 (ルール: ${rule})`);
 }
 
 

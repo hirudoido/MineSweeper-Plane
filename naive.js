@@ -533,28 +533,28 @@ class ThreeInRowPlacement extends PlacementStrategy {
   place(board, mineCount, rng, excludeIndex = -1) {
     const total = board.rows * board.cols;
 
-    while (true) {
-      // 盤面リセット
-      for (const cell of board.cells) cell.mine = false;
+    // 盤面リセット
+    for (const cell of board.cells) cell.mine = false;
 
-      // ランダム配置
-      let placed = 0;
-      while (placed < mineCount) {
-        const idx = Math.floor(rng() * total);
-        if (idx === excludeIndex) continue;
-        const cell = board.cells[idx];
-        if (!cell.mine) {
-          cell.mine = true;
-          placed++;
-        }
+    // ランダム配置
+    let placed = 0;
+    while (placed < mineCount) {
+      const idx = Math.floor(rng() * total);
+      if (idx === excludeIndex) continue;
+      const cell = board.cells[idx];
+      if (!cell.mine) {
+        cell.mine = true;
+        placed++;
       }
-
-      // 条件チェック
-      if (this._allInThree(board) && !this._hasFourOrMore(board)) {
-        return; // 成功
-      }
-      // 失敗ならリトライ
     }
+
+    // 条件チェック
+    if (this._allInThree(board) && !this._hasFourOrMore(board)) {
+      return; // 成功
+    }
+
+    // ★ 失敗 → Game 側のリトライへ
+    throw new Error("ThreeInRow placement failed");
   }
 
   // 各地雷が必ず3連に属しているか
@@ -569,20 +569,23 @@ class ThreeInRowPlacement extends PlacementStrategy {
   _isPartOfThree(board, cell) {
     const dirs = [[1,0],[0,1],[1,1],[1,-1]];
     for (const [dr, dc] of dirs) {
-      let count = 1; // 自分を含める
+      let count = 1;
+
       // 前方向
       let r = cell.r + dr, c = cell.c + dc;
       while (r >= 0 && c >= 0 && r < board.rows && c < board.cols) {
         if (board.getCell(r,c).mine) { count++; r+=dr; c+=dc; }
         else break;
       }
+
       // 逆方向
       r = cell.r - dr; c = cell.c - dc;
       while (r >= 0 && c >= 0 && r < board.rows && c < board.cols) {
         if (board.getCell(r,c).mine) { count++; r-=dr; c-=dc; }
         else break;
       }
-      if (count >= 3) return true; // 3連に属している
+
+      if (count >= 3) return true;
     }
     return false;
   }
@@ -594,17 +597,20 @@ class ThreeInRowPlacement extends PlacementStrategy {
       const dirs = [[1,0],[0,1],[1,1],[1,-1]];
       for (const [dr, dc] of dirs) {
         let count = 1;
+
         let r = cell.r + dr, c = cell.c + dc;
         while (r >= 0 && c >= 0 && r < board.rows && c < board.cols) {
           if (board.getCell(r,c).mine) { count++; r+=dr; c+=dc; }
           else break;
         }
+
         r = cell.r - dr; c = cell.c - dc;
         while (r >= 0 && c >= 0 && r < board.rows && c < board.cols) {
           if (board.getCell(r,c).mine) { count++; r-=dr; c-=dc; }
           else break;
         }
-        if (count > 3) return true; // 4連以上がある
+
+        if (count > 3) return true;
       }
     }
     return false;
@@ -651,7 +657,6 @@ class QuadrantEqualPlacement extends PlacementStrategy {
     }
   }
 }
-//道
 
 // 端点数を数える（次数1のセル）
 // 8方向の隣接セル取得
@@ -697,7 +702,7 @@ function canExtendTo(board, currentEnd, next, startCell) {
   return degEndAfter <= 2 && degNextAfter <= 2;
 }
 
-// ★ PlacementStrategy 実装
+// ★道 実装
 class PathPlacement extends PlacementStrategy {
   place(board, mineCount, rng, excludeIndex = -1) {
     const total = board.rows * board.cols;
@@ -1026,66 +1031,93 @@ function rotateShape(shape) {
 
 class LightningPlacement extends PlacementStrategy {
   place(board, mineCount, rng, excludeIndex = -1) {
-    const total = board.rows * board.cols;
+    const rows = board.rows;
+    const cols = board.cols;
 
-    // スタート地点（上側から選ぶと雷っぽい）
-    let startR = Math.floor(rng() * Math.min(3, board.rows));
-    let startC = Math.floor(rng() * board.cols);
-    let current = board.getCell(startR, startC);
+    // スタート位置（上側から始めると雷っぽい）
+    let r = Math.floor(rng() * Math.min(1, rows));
+    let c = Math.floor(rng() * cols);
 
+    let current = board.getCell(r, c);
     current.mine = true;
-    let placed = 1;
 
-    const visited = new Set([startR * board.cols + startC]);
+    let placed = 1;
+    const visited = new Set([r * cols + c]);
 
     while (placed < mineCount) {
-      const dirs = [
-        [1, 0],   // 下へ
+
+      // --- メインの雷の進行方向（ジグザグ） ---
+      const mainDirs = [
+        [1, 0],   // 下
         [1, 1],   // 右下
         [1, -1],  // 左下
         [0, 1],   // 右
         [0, -1],  // 左
       ];
 
-      // ランダムに方向を選ぶ
-      const [dr, dc] = dirs[Math.floor(rng() * dirs.length)];
+      const [dr, dc] = mainDirs[Math.floor(rng() * mainDirs.length)];
       const nr = current.r + dr;
       const nc = current.c + dc;
 
-      // 盤面外なら別方向を試す
-      if (nr < 0 || nc < 0 || nr >= board.rows || nc >= board.cols) continue;
+      if (nr >= 0 && nc >= 0 && nr < rows && nc < cols) {
+        const next = board.getCell(nr, nc);
+        const idx = nr * cols + nc;
 
-      const next = board.getCell(nr, nc);
-      const idx = nr * board.cols + nc;
-
-      // ループ禁止
-      if (visited.has(idx)) continue;
-
-      // 地雷設置
-      next.mine = true;
-      visited.add(idx);
-      placed++;
-
-      current = next;
-
-      // ★ 分岐（枝）を作る：ランダムで枝を伸ばす
-      if (rng() < 0.15 && placed < mineCount) {
-        const branchDirs = [
-          [0, 1], [0, -1], [1, 0]
-        ];
-        const [br, bc] = branchDirs[Math.floor(rng() * branchDirs.length)];
-        const br2 = nr + br;
-        const bc2 = nc + bc;
-        if (br2 >= 0 && bc2 >= 0 && br2 < board.rows && bc2 < board.cols) {
-          const branchCell = board.getCell(br2, bc2);
-          const bidx = br2 * board.cols + bc2;
-          if (!visited.has(bidx)) {
-            branchCell.mine = true;
-            visited.add(bidx);
-            placed++;
-          }
+        if (!visited.has(idx)) {
+          next.mine = true;
+          visited.add(idx);
+          placed++;
+          current = next;
         }
       }
+
+      // --- ★ 枝を作る（確率高め） ---
+      if (rng() < 0.35 && placed < mineCount) {
+        this._makeBranch(board, current, rng, visited, mineCount, placed);
+        placed = visited.size;
+      }
+    }
+  }
+
+  // --- 枝を作る処理 ---
+  _makeBranch(board, startCell, rng, visited, mineCount, placed) {
+    const rows = board.rows;
+    const cols = board.cols;
+
+    // 枝の長さ：1〜3
+    const branchLength = 1 + Math.floor(rng() * 3);
+
+    // 枝の方向：上下左右＋斜め
+    const dirs = [
+      [0, 1], [0, -1], [1, 0], [-1, 0],
+      [1, 1], [1, -1], [-1, 1], [-1, -1]
+    ];
+
+    let r = startCell.r;
+    let c = startCell.c;
+
+    for (let i = 0; i < branchLength; i++) {
+      const [dr, dc] = dirs[Math.floor(rng() * dirs.length)];
+      const nr = r + dr;
+      const nc = c + dc;
+
+      if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) break;
+
+      const idx = nr * cols + nc;
+      if (!visited.has(idx)) {
+        board.getCell(nr, nc).mine = true;
+        visited.add(idx);
+      }
+
+      r = nr;
+      c = nc;
+
+      // 枝からさらに枝を生む（低確率）
+      if (rng() < 0.05 && visited.size < mineCount) {
+        this._makeBranch(board, board.getCell(r, c), rng, visited, mineCount, visited.size);
+      }
+
+      if (visited.size >= mineCount) break;
     }
   }
 }
