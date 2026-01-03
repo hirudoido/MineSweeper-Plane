@@ -1841,7 +1841,7 @@ class ColorDiffNumberRule extends NumberRule {
 
   isZero(cell) {
     // floodOpen で「0」と「空白(null)」の両方を広げる
-    return cell.value === null || cell.value === 0;
+    return cell.value === null ;
   }
 }
 //カラーごとに価値
