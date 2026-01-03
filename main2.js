@@ -20,9 +20,9 @@ window.addEventListener("DOMContentLoaded", () => {
 // 地雷数をルールに合わせて補正する
 function normalizeMinesForRule(rows, cols, mines, placementKey) {
   console.log(`normalizeMinesForRule: ${rows}x${cols}, mines=${mines}, rule=${placementKey}`);
-  // ★ 3連のみルールの特別処理
+  // ★ 3連続配置 3の倍数に丸める
   if (placementKey === "ThreeInRow") {
-    if (mines === 4) return 5;
+  return Math.round(mines /3) * 3;
   }
 
   //4分割 4の倍数に丸める

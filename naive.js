@@ -530,90 +530,109 @@ class ContinentPlacement extends PlacementStrategy {
 }
 //  3連のみ
 class ThreeInRowPlacement extends PlacementStrategy {
+  constructor() {
+    super();
+    this.dirs = [
+      [1, 0],   // 縦
+      [0, 1],   // 横
+      [1, 1],   // 斜め
+      [1, -1],  // 逆斜め
+    ];
+  }
+
   place(board, mineCount, rng, excludeIndex = -1) {
-    const total = board.rows * board.cols;
+    if (mineCount % 3 !== 0) {
+      throw new Error("3連のみルールでは地雷数は3の倍数である必要があります");
+    }
 
     // 盤面リセット
     for (const cell of board.cells) cell.mine = false;
 
-    // ランダム配置
-    let placed = 0;
-    while (placed < mineCount) {
-      const idx = Math.floor(rng() * total);
-      if (idx === excludeIndex) continue;
-      const cell = board.cells[idx];
-      if (!cell.mine) {
-        cell.mine = true;
-        placed++;
-      }
-    }
+    const groups = mineCount / 3;
+    let placedGroups = 0;
 
-    // 条件チェック
-    if (this._allInThree(board) && !this._hasFourOrMore(board)) {
-      return; // 成功
-    }
+    let safety = 0;
+    const MAX = 20000;
 
-    // ★ 失敗 → Game 側のリトライへ
-    throw new Error("ThreeInRow placement failed");
-  }
-
-  // 各地雷が必ず3連に属しているか
-  _allInThree(board) {
-    for (const cell of board.cells) {
-      if (!cell.mine) continue;
-      if (!this._isPartOfThree(board, cell)) return false;
-    }
-    return true;
-  }
-
-  _isPartOfThree(board, cell) {
-    const dirs = [[1,0],[0,1],[1,1],[1,-1]];
-    for (const [dr, dc] of dirs) {
-      let count = 1;
-
-      // 前方向
-      let r = cell.r + dr, c = cell.c + dc;
-      while (r >= 0 && c >= 0 && r < board.rows && c < board.cols) {
-        if (board.getCell(r,c).mine) { count++; r+=dr; c+=dc; }
-        else break;
+    while (placedGroups < groups) {
+      safety++;
+      if (safety > MAX) {
+        throw new Error("3連配置に失敗（空間不足）");
       }
 
-      // 逆方向
-      r = cell.r - dr; c = cell.c - dc;
-      while (r >= 0 && c >= 0 && r < board.rows && c < board.cols) {
-        if (board.getCell(r,c).mine) { count++; r-=dr; c-=dc; }
-        else break;
+      const r = Math.floor(rng() * board.rows);
+      const c = Math.floor(rng() * board.cols);
+      const [dr, dc] = this.dirs[Math.floor(rng() * this.dirs.length)];
+
+      const cells = [
+        [r, c],
+        [r + dr, c + dc],
+        [r + 2 * dr, c + 2 * dc],
+      ];
+
+      // 盤面外
+      if (cells.some(([rr, cc]) => rr < 0 || cc < 0 || rr >= board.rows || cc >= board.cols))
+        continue;
+
+      // excludeIndex のセルを含むならNG
+      if (cells.some(([rr, cc]) => rr * board.cols + cc === excludeIndex))
+        continue;
+
+      // 既存地雷と重複
+      if (cells.some(([rr, cc]) => board.getCell(rr, cc).mine))
+        continue;
+
+      // 仮置きして4連チェック
+      if (this._wouldMakeFour(board, cells))
+        continue;
+
+      // 配置
+      for (const [rr, cc] of cells) {
+        board.getCell(rr, cc).mine = true;
       }
 
-      if (count >= 3) return true;
+      placedGroups++;
     }
-    return false;
   }
 
-  // 4連以上が存在するか
-  _hasFourOrMore(board) {
-    for (const cell of board.cells) {
-      if (!cell.mine) continue;
-      const dirs = [[1,0],[0,1],[1,1],[1,-1]];
-      for (const [dr, dc] of dirs) {
+  _wouldMakeFour(board, cells) {
+    // 仮置き
+    for (const [r, c] of cells) {
+      board.getCell(r, c).mine = true;
+    }
+
+    let bad = false;
+
+    for (const [r, c] of cells) {
+      for (const [dr, dc] of this.dirs) {
         let count = 1;
 
-        let r = cell.r + dr, c = cell.c + dc;
-        while (r >= 0 && c >= 0 && r < board.rows && c < board.cols) {
-          if (board.getCell(r,c).mine) { count++; r+=dr; c+=dc; }
-          else break;
+        // 前方向
+        let rr = r + dr, cc = c + dc;
+        while (board.getCell(rr, cc)?.mine) {
+          count++; rr += dr; cc += dc;
         }
 
-        r = cell.r - dr; c = cell.c - dc;
-        while (r >= 0 && c >= 0 && r < board.rows && c < board.cols) {
-          if (board.getCell(r,c).mine) { count++; r-=dr; c-=dc; }
-          else break;
+        // 逆方向
+        rr = r - dr; cc = c - dc;
+        while (board.getCell(rr, cc)?.mine) {
+          count++; rr -= dr; cc -= dc;
         }
 
-        if (count > 3) return true;
+        if (count >= 4) {
+          bad = true;
+          break;
+        }
       }
+      if (bad) break;
     }
-    return false;
+
+    // 元に戻す
+    for (const [r, c] of cells) {
+      board.getCell(r, c).mine = false;
+    }
+
+    return bad;
   }
 }
 //4分割
