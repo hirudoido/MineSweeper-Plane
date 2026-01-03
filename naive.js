@@ -1047,7 +1047,7 @@ const TETRIS_MINOS = {
 function rotateShape(shape) {
   return shape.map(([r, c]) => [c, -r]);
 }
-
+// 雷配置
 class LightningPlacement extends PlacementStrategy {
   place(board, mineCount, rng, excludeIndex = -1) {
     const rows = board.rows;
@@ -1137,6 +1137,121 @@ class LightningPlacement extends PlacementStrategy {
       }
 
       if (visited.size >= mineCount) break;
+    }
+  }
+}
+// 蜘蛛の巣配置
+class SpiderWebPlacement extends PlacementStrategy {
+  place(board, mineCount, rng, excludeIndex = -1) {
+    for (const cell of board.cells) cell.mine = false;
+
+    const rows = board.rows;
+    const cols = board.cols;
+
+    const centerR = Math.floor(rows / 2) + Math.floor(rng() * 3) - 1;
+    const centerC = Math.floor(cols / 2) + Math.floor(rng() * 3) - 1;
+
+// ★ 8方向の基準角度
+const baseAngles = [
+    0,
+    51.5,
+    103,
+    154.5,
+    206,
+    257.5,
+    309,
+];
+
+// ★ 角度ゆがみ入りの方向ベクトル生成
+let dirs = [];
+
+for (const base of baseAngles) {
+  // ±10〜25°のゆがみ
+  const jitter = (10 + rng() * 15) * (rng() < 0.5 ? -1 : 1);
+  const angle = base + jitter;
+
+  const rad = angle * Math.PI / 180;
+
+  // 方向ベクトル（整数化）
+  const dr = Math.round(Math.sin(rad));
+  const dc = Math.round(Math.cos(rad));
+
+  // 無効方向（0,0）を除外
+  if (dr === 0 && dc === 0) continue;
+
+  dirs.push([dr, dc]);
+}
+
+    let remaining = mineCount;
+
+    // === タイプ判定 ===
+    let ringCount = 0;
+    if (mineCount <= 8) {
+      ringCount = 0; // MiniLegs
+    } else if (mineCount <= 20) {
+      ringCount = 1;
+    } else if (mineCount <= 40) {
+      ringCount = 2;
+    } else {
+      ringCount = 4;
+    }
+
+    // === 放射線配置 ===
+    for (const [dr, dc] of dirs) {
+      let r = centerR;
+      let c = centerC;
+      const legLength = Math.floor(Math.min(rows, cols) / 2 * (0.6 + rng() * 0.4));
+
+      for (let step = 0; step < legLength && remaining > 0; step++) {
+        r += dr;
+        c += dc;
+        if (r < 0 || c < 0 || r >= rows || c >= cols) break;
+        const idx = r * cols + c;
+        if (idx === excludeIndex) continue;
+        const cell = board.getCell(r, c);
+        if (!cell.mine) {
+          cell.mine = true;
+          remaining--;
+        }
+      }
+    }
+
+    // === リング配置 ===
+    for (let ring = 1; ring <= ringCount && remaining > 0; ring++) {
+      const d = ring * 2 + Math.floor(rng() * 2); // ゆがみ
+      for (let r = centerR - d; r <= centerR + d; r++) {
+        for (let c = centerC - d; c <= centerC + d; c++) {
+          if (remaining <= 0) break;
+          if (r < 0 || c < 0 || r >= rows || c >= cols) continue;
+          if (Math.abs(r - centerR) === d || Math.abs(c - centerC) === d) {
+            const idx = r * cols + c;
+            if (idx === excludeIndex) continue;
+            const cell = board.getCell(r, c);
+            if (!cell.mine) {
+              cell.mine = true;
+              remaining--;
+            }
+          }
+        }
+      }
+    }
+
+    // === 余りはランダムに埋める（DenseWeb用） ===
+    if (remaining > 0) {
+      const total = rows * cols;
+      while (remaining > 0) {
+        const idx = Math.floor(rng() * total);
+        if (idx === excludeIndex) continue;
+        const cell = board.cells[idx];
+        if (!cell.mine) {
+          cell.mine = true;
+          remaining--;
+        }
+      }
+    }
+
+    if (excludeIndex >= 0) {
+      board.cells[excludeIndex].mine = false;
     }
   }
 }
@@ -1429,7 +1544,7 @@ class RingExplore extends ExploreStrategy {
   }
 }
 //菱形
-class DiamondExplore extends ExploreStrategy {
+class Diamond2Explore extends ExploreStrategy {
   neighbors(board, r, c) {
     const cell = board.getCell(r, c);
     if (!cell) return [];
@@ -1690,7 +1805,47 @@ class DiamondMineCountExplore extends ExploreStrategy {
     return out;
   }
 }
+// 7×7探索（上下左右3マスまで）
+class Big49Explore extends ExploreStrategy {
+  neighbors(board, r, c) {
+    const out = [];
+    for (let dr = -3; dr <= 3; dr++) {
+      for (let dc = -3; dc <= 3; dc++) {
+        if (dr === 0 && dc === 0) continue; // 自分は除外
+        const rr = r + dr, cc = c + dc;
+        if (rr >= 0 && cc >= 0 && rr < board.rows && cc < board.cols) {
+          out.push(board.getCell(rr, cc));
+        }
+      }
+    }
+    return out;
+  }
+}
+//菱形2マス
+class Diamond3Explore extends ExploreStrategy {
+  neighbors(board, r, c) {
+    const cell = board.getCell(r, c);
+    if (!cell) return [];
 
+    const radius = 3; // ★ シンプルに固定半径3（ダイヤ型）
+
+    const out = [];
+    for (let dr = -radius; dr <= radius; dr++) {
+      for (let dc = -radius; dc <= radius; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        // マンハッタン距離で判定
+        if (Math.abs(dr) + Math.abs(dc) <= radius) {
+          const rr = r + dr, cc = c + dc;
+          if (rr >= 0 && cc >= 0 && rr < board.rows && cc < board.cols) {
+            out.push(board.getCell(rr, cc));
+          }
+        }
+      }
+    }
+
+    return out;
+  }
+}
 // ====== 数字ルール実装 ======
 // 総数ルール（標準）
 class TotalNumberRule extends NumberRule {
@@ -2412,7 +2567,8 @@ NoTouch:NoTouchPlacement,
 noOrthogonal: NoOrthogonalPlacement,
 Cluster4Isolated:Cluster4IsolatedPlacement,
 TetrisMino:TetrisMinoPlacement,
-Lightning:LightningPlacement
+Lightning:LightningPlacement,
+SpiderWeb:SpiderWebPlacement
 
 };
 
@@ -2429,13 +2585,15 @@ const exploreMap = {
   Cross1: Cross4Explore,
   Cross2:Cross2Explore,
   Ring:RingExplore,
-  Diamond:DiamondExplore,
+  Diamond2:Diamond2Explore,
   RippleChain:RippleChainExplore,
   Ripple:RippleExplore,
   ExpandUntil2MinesTriangle:ExpandUntil2MinesTriangleExplore,
    Global: GlobalExplore,
    SquareMineCount:SquareMineCountExplore,
    DiamondMineCount:DiamondMineCountExplore,
+    big49:Big49Explore,
+    Diamond3:Diamond3Explore
 
 };
 
