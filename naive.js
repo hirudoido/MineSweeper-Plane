@@ -2548,6 +2548,28 @@ class PrimeOnlyNumberRule extends NumberRule {
     }
   }
 }
+class PercentNumberRule extends NumberRule {
+  calculate(cell, neighbors) {
+    // 周囲の地雷数
+    const mines = neighbors.filter(nb => nb.mine).length;
+
+    // 探索範囲のマス数（neighbors.length）
+    const total = neighbors.length;
+    // ％計算（0〜100）
+    const percent = Math.round((mines / total) * 100);
+if(isNaN(percent)){
+  return 0;
+}
+    return percent;
+  }
+
+  render(cell) {
+    if (cell.value === 0|| cell.value === "") { return "";} // 0% は空白
+    // 0% のときは空白にするかどうかは好み
+    // ここでは 0% も表示するようにする
+    return cell.value + "%";
+  }
+}
 // ====== ★ここでマップを定義 ======
 const placementMap = {
   random: RandomPlacement,
@@ -2618,7 +2640,8 @@ const numberMap = {
   EvenOdd: EvenOddNumberRule,
   Odd:OddNumberRule,
   prime:PrimeNumberRule,
-  PrimeOnly:PrimeOnlyNumberRule
+  PrimeOnly:PrimeOnlyNumberRule,
+  Percent:PercentNumberRule
 };
 
 
