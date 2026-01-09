@@ -2570,6 +2570,149 @@ if(isNaN(percent)){
     return cell.value + "%";
   }
 }
+// 保留マンハッタン距離ルール
+class ManhattanVectorRule extends NumberRule {
+  constructor(explore) {
+    super();
+    this.explore = explore; // 使わなくても受け取る必要がある
+  }
+
+  calculate(cell, neighbors) {
+    if (cell.mine) return "💣";
+
+    if (!neighbors || neighbors.length === 0) return "";
+
+    let minDist = Infinity;
+    let bestDx = 0;
+    let bestDy = 0;
+
+    for (const nb of neighbors) {
+      if (!nb.mine) continue;
+
+      const dx = nb.c - cell.c;
+      const dy = nb.r - cell.r;
+      const dist = Math.abs(dx) + Math.abs(dy);
+
+      if (dist < minDist) {
+        minDist = dist;
+        bestDx = dx;
+        bestDy = dy;
+      }
+    }
+
+    if (minDist === Infinity) return "";
+
+    return `X:${Math.abs(bestDx)}, Y:${Math.abs(bestDy)}`;
+  }
+
+  render(cell) {
+    if (cell.mine) return "💣";
+    if (typeof cell.value === "string") return cell.value;
+    if (typeof cell.value === "number") return String(cell.value);
+    return "";
+  }
+
+  isZero(cell) {
+    return false;
+  }
+}
+// 上下分割数ルール
+class VerticalSplitCountRule extends NumberRule {
+  constructor(explore) {
+    super();
+    this.explore = explore;
+  }
+
+calculate(cell, neighbors) {
+  if (cell.mine) return "💣";
+
+  let up = 0;
+  let down = 0;
+
+  for (const nb of neighbors) {
+    if (!nb.mine) continue;
+
+    if (nb.r <= cell.r) up++;
+     if (nb.r >= cell.r) down++;
+  }
+
+  //if (up === 0 && down === 0) return "";
+
+  return `上${up} 下${down}`;
+}
+
+render(cell) {
+  if (cell.mine) return "💣";
+  if (cell.value === "上0 下0") return "";
+
+  if (typeof cell.value === "string") {
+    const parts = cell.value.split(" ");
+    if (parts.length === 2) {
+      return `${parts[0]}<br>${parts[1]}`; // 上下を改行で分ける
+    }
+    return cell.value;
+  }
+
+  return "";
+}
+
+isZero(cell) {
+  if (cell.mine) return false;
+
+  if (typeof cell.value === "string") {
+    // 上も下も 0 のときだけゼロ扱い
+    return cell.value === "上0 下0";
+  }
+
+  return false;
+}
+
+}
+// 左右分割数ルール
+class HorizontalSplitCountRule extends NumberRule {
+  constructor(explore) {
+    super();
+    this.explore = explore;
+  }
+
+  calculate(cell, neighbors) {
+    if (cell.mine) return "💣";
+
+    let left = 0;
+    let right = 0;
+
+    for (const nb of neighbors) {
+      if (!nb.mine) continue;
+
+      if (nb.c <= cell.c) left++;
+      if (nb.c >= cell.c) right++;
+    }
+
+    if (left === 0 && right === 0) return "左0 右0";
+
+    return `左${left} 右${right}`;
+  }
+
+  render(cell) {
+    if (cell.mine) return "💣";
+    if (cell.value === "左0 右0") return "";
+
+    if (typeof cell.value === "string") {
+      const parts = cell.value.split(" ");
+      if (parts.length === 2) {
+        return `${parts[0]}<br>${parts[1]}`; // 左右を縦に並べる
+      }
+      return cell.value;
+    }
+
+    return "";
+  }
+
+  isZero(cell) {
+    if (cell.mine) return false;
+    return cell.value === "左0 右0";
+  }
+}
 // ====== ★ここでマップを定義 ======
 const placementMap = {
   random: RandomPlacement,
@@ -2641,7 +2784,10 @@ const numberMap = {
   Odd:OddNumberRule,
   prime:PrimeNumberRule,
   PrimeOnly:PrimeOnlyNumberRule,
-  Percent:PercentNumberRule
+  Percent:PercentNumberRule,
+ManhattanVector: ManhattanVectorRule,
+VerticalSplit: VerticalSplitCountRule,
+HorizontalSplit: HorizontalSplitCountRule
 };
 
 

@@ -368,26 +368,28 @@ paintCell(cell) {
   d.textContent = "";
   d.innerHTML = "";
 
-
+// --- 描画 ---
 if (cell.open) {
   if (cell.mine) {
     d.textContent = "💣";
   } else {
     const rendered = this.number.render ? this.number.render(cell) : cell.value;
     d.innerHTML = rendered;
-    if (rendered.length >= 8&&number!="cluster") {
 
-      d.classList.add("Superlonglong-text");
-      
-       }else  if (rendered.length >= 6&&number!="cluster") {
+// 除外ルール
+const skip = ["cluster", "VerticalSplit", "HorizontalSplit"];
 
-      d.classList.add("Superlong-text");
-      
-    }  else   if (rendered.length >= 3) {
-      d.classList.add("long-text");
-    }
-
+// 除外ルールならフォント調整しない
+if (true) {
+  if (rendered.length >= 8&&!skip.includes(number)) {
+    d.classList.add("Superlonglong-text");
+  } else if (rendered.length >= 6&&!skip.includes(number)) {
+    d.classList.add("Superlong-text");
+  } else if (rendered.length >= 3) {
+    d.classList.add("long-text");
   }
+}
+ }
 
   } else {
     if (cell.flag) {
@@ -412,7 +414,7 @@ openCell(cell) {
     document.getElementById("gameover").classList.remove("hidden");
     return;
   }
-  // ★ ここを修正
+  // 数字セル
   if (this.number.isZero(cell)) {
     this.floodOpen(cell);
   }
@@ -553,6 +555,7 @@ console.log("startGame params:", rows, cols, mines, placementKey, exploreKey, nu
   const explore   = new exploreMap[exploreKey]();
   const number    = new numberMap[numberKey](explore);
 
+
   if (seedOverride !== null) {
     document.getElementById("seed").value = seedOverride;
   }
@@ -563,7 +566,7 @@ console.log("startGame params:", rows, cols, mines, placementKey, exploreKey, nu
 
     document.getElementById("attemptCounter").classList.add("hidden");
 // ← 完了で非表示
-  }, 50);
+  }, 10);
 }
 
 
