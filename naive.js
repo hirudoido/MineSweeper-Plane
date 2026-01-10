@@ -2570,7 +2570,7 @@ if(isNaN(percent)){
     return cell.value + "%";
   }
 }
-// 保留マンハッタン距離ルール
+// マンハッタン距離ルール
 class ManhattanVectorRule extends NumberRule {
   constructor(explore) {
     super();
@@ -2582,39 +2582,45 @@ class ManhattanVectorRule extends NumberRule {
 
     if (!neighbors || neighbors.length === 0) return "";
 
-    let minDist = Infinity;
-    let bestDx = 0;
-    let bestDy = 0;
+let sumDx = 0;
+let sumDy = 0;
 
-    for (const nb of neighbors) {
-      if (!nb.mine) continue;
+for (const nb of neighbors) {
+  if (!nb.mine) continue;
 
-      const dx = nb.c - cell.c;
-      const dy = nb.r - cell.r;
-      const dist = Math.abs(dx) + Math.abs(dy);
+  sumDx += Math.abs(nb.c - cell.c);
+  sumDy += Math.abs(nb.r - cell.r);
+}
 
-      if (dist < minDist) {
-        minDist = dist;
-        bestDx = dx;
-        bestDy = dy;
-      }
+return `X:${Math.abs(sumDx)} Y:${Math.abs(sumDy)}`;
+  }
+
+render(cell) {
+  if (cell.mine) return "💣";
+  if (cell.value === "X:0 Y:0") return "";
+
+  if (typeof cell.value === "string") {
+    const parts = cell.value.split(" ");
+    if (parts.length === 2) {
+      return `${parts[0]}<br>${parts[1]}`; // 上下を改行で分ける
     }
-
-    if (minDist === Infinity) return "";
-
-    return `X:${Math.abs(bestDx)}, Y:${Math.abs(bestDy)}`;
+    return cell.value;
   }
 
-  render(cell) {
-    if (cell.mine) return "💣";
-    if (typeof cell.value === "string") return cell.value;
-    if (typeof cell.value === "number") return String(cell.value);
-    return "";
+  return "";
+}
+
+
+isZero(cell) {
+  if (cell.mine) return false;
+
+  if (typeof cell.value === "string") {
+    // 上も下も 0 のときだけゼロ扱い
+    return cell.value === "X:0 Y:0";
   }
 
-  isZero(cell) {
-    return false;
-  }
+  return false;
+}
 }
 // 上下分割数ルール
 class VerticalSplitCountRule extends NumberRule {

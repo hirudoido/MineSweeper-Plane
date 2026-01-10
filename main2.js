@@ -63,6 +63,12 @@ console.log(Math.round(mines /4) * 4);
 
 }
 
+/**
+ * Compresses a sequence of values into a shorter form.
+ * For example, [1, 1, 2, 2, 3] becomes ["1×2", "2×2", "3"].
+ * @param {Array<number>} arr The sequence of values to compress.
+ * @returns {Array<string>} The compressed sequence.
+ */
 //圧縮表記
 function compressSequence(arr) {
   const out = [];
@@ -133,14 +139,29 @@ class NumberRule {
   calculate(cell, neighbors) {
     throw new Error("Not implemented");
   }
+
   render(cell) {
     return cell.value === 0 ? "" : String(cell.value);
   }
+
   isZero(cell) {
     return cell.value === 0;
   }
-}
 
+  // ★ 追加：数字セル判定（全ルール共通）
+  isNumberCell(cell) {
+    if (cell.mine) return false;
+
+    // ゼロセルは数字扱いしない
+    if (this.isZero(cell)) return false;
+
+    // 空文字は数字扱いしない
+    if (cell.value === "") return false;
+
+    // 文字列でも数値でもOK
+    return true;
+  }
+}
 // ====== ゲーム進行管理 ======
 // 内側：Gameクラス
 class Game {
@@ -227,15 +248,18 @@ _applyHints(rng) {
 
     if (hintRate < 60) {
       // 60%未満 → 数字セルのみ（従来通り）
-      if (!cell.mine && cell.value > 0) candidates.push(cell);
+       if (this.number.isNumberCell(cell)) candidates.push(cell);
+
 
     } else if (hintRate < 70) {
       // 60〜69% → 数字セルを多めに開ける
-      if (!cell.mine && cell.value > 0) candidates.push(cell);
+        if (this.number.isNumberCell(cell)) candidates.push(cell);
+
 
     } else if (hintRate <= 90) {
       // 70〜90% → 数字セル＋地雷
-      if ((cell.value > 0) || cell.mine) candidates.push(cell);
+       if (this.number.isNumberCell(cell) || cell.mine) candidates.push(cell);
+
 
     } else {
       // 90%以上 → 数字セル＋地雷＋空白
@@ -377,7 +401,7 @@ if (cell.open) {
     d.innerHTML = rendered;
 
 // 除外ルール
-const skip = ["cluster", "VerticalSplit", "HorizontalSplit"];
+const skip = ["cluster", "VerticalSplit", "HorizontalSplit","ManhattanVector"];
 
 // 除外ルールならフォント調整しない
 if (true) {
