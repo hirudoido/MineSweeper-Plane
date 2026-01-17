@@ -2334,7 +2334,7 @@ class TruthLieNumberRule extends NumberRule {
       lie = truth + Math.floor( Math.random() * 2 )+2; // 1,2,3 の場合は必ず +2か3
     } else {
       // それ以外は ±2 のどちらかをランダムに
-      lie = (Math.random() < 0.5) ? truth - Math.floor( Math.random() * 2 )+2 : truth + Math.floor( Math.random() * 2 )+2;
+      lie = (Math.random() < 0.5) ? truth - Math.floor( Math.random() * 2 )-2 : truth + Math.floor( Math.random() * 2 )+2;
       if (lie < 0) lie = truth + Math.floor( Math.random() * 2 )+2; // マイナスは避ける
     }
 

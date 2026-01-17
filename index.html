@@ -41,6 +41,10 @@ body {
   padding: 6px;
   border-radius: 8px;
 }
+.opt {
+height: 6px;
+  font-size: 1.2em;
+}
 #hintRate {
   width: 100px;   /* 横幅 */
   accent-color: #3d4dcb; /* スライダーの色（モダンブラウザ対応） */
@@ -228,12 +232,51 @@ body {
   position: absolute;
   top: 0;
   left: 0;
-  width: 200%;
-  height: 200%;
+width: 200%;
+height: 200%;
   z-index: 10;
   pointer-events: none;
 }
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  margin-top: 4px;
+  background: #505667;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
 
+.tool-btn img {
+  width: 24px;
+  height: 24px;
+}
+
+.tool-btn.selected,
+.color-btn.selected {
+  outline: 2px solid yellow;
+  outline-offset: 2px;
+}
+
+.color-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+.tool-btn.selected,
+.color-btn.selected {
+  outline: 2px solid #ffd700; /* ゴールドの枠 */
+  outline-offset: 2px;
+  box-shadow: 0 0 8px #ffd700; /* 発光効果 */
+  border-radius: 4px;
+  transition: box-shadow 0.2s ease;
+}
 </style>
 </head>
 <body>
@@ -366,33 +409,42 @@ body {
   </label>
 </div>
 <!-- ツールボックス -->
-<div id="drawToolbar">
-  <select id="toolSelect">
-  <option value="open">セルを開ける</option>
-  <option value="pen">ペン</option>
-  <option value="eraser">消しゴム</option>
-</select>
+     
+<div id="drawToolbar" class="toolbar">
+  <!-- ツール選択 -->
+   <p class="opt">ツール:</p>
+  <div class="tool-group">
+    <button class="tool-btn" data-tool="open" title="開く"><img src="クリック.webp"></button>
+    <button class="tool-btn" data-tool="pen" title="ペン"><img src="えんぴつ.png"></button>
+    <button class="tool-btn" data-tool="eraser" title="消しゴム"><img src="消しゴム.png"></button>
+    <button class="tool-btn" data-tool="colorEraser" title="色消しゴム"><img src="ペンのサイン.jpg"></button>
+  </div>
 
-  <select id="colorSelect">
-    <option value="red">赤</option>
-    <option value="purple">紫</option>
-    <option value="blue">青</option>
-    <option value="yellow">黄</option>
-    <option value="green">緑</option>
-    <option value="white">白</option>
-    <option value="black">黒</option>
-  </select>
+  <!-- 色選択 -->
+      <p class="opt">色:</p>
+  <div class="color-group">
+    <button class="color-btn" data-color="red" style="background:red;"></button>
+    <button class="color-btn" data-color="blue" style="background:blue;"></button>
+    <button class="color-btn" data-color="purple" style="background:purple;"></button>
+    <button class="color-btn" data-color="green" style="background:green;"></button>
+    <button class="color-btn" data-color="yellow" style="background:yellow;"></button>
+    <button class="color-btn" data-color="white" style="background:white;"></button>
+    <button class="color-btn" data-color="black" style="background:black;"></button>
+  </div>
 
+  <!-- 太さ選択 -->
+   <p class="opt">太さ:</p>
   <select id="widthSelect">
     <option value="2">細</option>
-    <option value="4">中</option>
-    <option value="6">太</option>
+    <option value="5">中</option>
+    <option value="9">太</option>
+    <option value="15">極太</option>
   </select>
 
+  <!-- 消去ボタン -->
   <button id="clearColor">選択色を全消し</button>
   <button id="clearAll">全消し</button>
 </div>
-
 <div id="attemptCounter" class="hidden">試行中: 0 回</div>
   <!-- ボード -->
 <div id="boardWrapper">

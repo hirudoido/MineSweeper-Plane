@@ -296,9 +296,9 @@ _buildBoardUI() {
     d.className = "cell " + (((cell.r + cell.c) % 2 === 0) ? "light" : "dark");
 
 d.addEventListener("click", () => {
-  if (currentMode === "open") {
+ 
     this.openCell(cell);
-  }
+  
   // pen / eraser のときは何もしない（canvas が描画を受け取る）
 });
     d.addEventListener("contextmenu", e => {
@@ -592,7 +592,10 @@ console.log("startGame params:", rows, cols, mines, placementKey, exploreKey, nu
 
   currentGame = new Game(rows, cols, mines, { placement, explore, number });
   await currentGame.init(seed);
-resizeCanvasToBoard();
+
+  drawManager.init();
+ resizeCanvasToBoard();
+// ★ これを追加
 
 document.getElementById("attemptCounter").classList.add("hidden");
 // ← 完了で非表示
@@ -746,175 +749,161 @@ colsInput.step = 1;
 //console.log(`地雷数ステップを ${step} に設定 (ルール: ${rule})`);
 }
 // ====== 画面サイズをボードサイズに合わせる ======
-const canvas = document.getElementById("drawLayer");
-const ctx = canvas.getContext("2d");
-let drawing = false;
-let currentMode = "open";
+const colorMap = {
+  red:    [255, 0, 0],
+  purple: [128, 0, 128],
+  blue:   [0, 0, 255],
+  yellow: [255, 255, 0],
+  green:  [0, 128, 0],
+  white:  [255, 255, 255],
+  black:  [0, 0, 0]
+};
+const drawManager = {
+  canvas: document.getElementById("drawLayer"),
+  ctx: null,
+  drawing: false,
+  mode: "open",
+  color: "red",
+  width: 2,
 
-function log(...args) {
-  console.log("[DRAW]", ...args);
-}
-// マウスダウン時に描画開始
-canvas.addEventListener("mousedown", e => {
-  log("mousedown", { mode: currentMode, x: e.offsetX, y: e.offsetY });
+  init() {
+    this.ctx = this.canvas.getContext("2d");
+    this.bindEvents();
+  },
 
-  if (currentMode !== "pen" && currentMode !== "eraser") {
-    log("→ 描画モードではないので無視");
-    return;
-  }
+  bindEvents() {
+    this.canvas.addEventListener("mousedown", this.onStart.bind(this));
+    this.canvas.addEventListener("mousemove", this.onMove.bind(this));
+    document.addEventListener("mouseup", this.onEnd.bind(this));
 
-  drawing = true;
-  ctx.beginPath();
-  ctx.moveTo(e.offsetX, e.offsetY);
-  log("→ 描画開始");
-});
-// マウス移動時に描画
-canvas.addEventListener("mousemove", e => {
-  if (!drawing) return;
+    this.canvas.addEventListener("touchstart", this.onTouchStart.bind(this));
+    this.canvas.addEventListener("touchmove", this.onTouchMove.bind(this));
+    this.canvas.addEventListener("touchend", this.onEnd.bind(this));
+  },
 
-  // ★ ツールバーより上は描かない
-  const toolbar = document.getElementById("drawToolbar");
-  const limitY = toolbar.getBoundingClientRect().bottom;
+  onStart(e) {
+    if (!["pen", "eraser", "colorEraser"].includes(this.mode)) return;
+    const { x, y } = this.getPos(e);
+    this.drawing = true;
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, y);
+  },
 
-  if (e.clientY < limitY) {
-    return; // 描画しない
-  }
+  onMove(e) {
+    if (!this.drawing) return;
+    const { x, y } = this.getPos(e);
+    if (this.mode === "colorEraser") {
+      this.eraseColorAt(x, y);
+      return;
+    }
+    this.ctx.lineWidth = this.width;
+    this.ctx.lineCap = "round";
+    this.ctx.globalCompositeOperation = this.mode === "eraser" ? "destination-out" : "source-over";
+    this.ctx.strokeStyle = this.color;
+    this.ctx.lineTo(x, y);
+    this.ctx.stroke();
+  },
 
-  const color = document.getElementById("colorSelect").value;
-  const width = +document.getElementById("widthSelect").value;
+  onTouchStart(e) {
+    const touch = e.touches[0];
+    this.onStart(touch);
+    e.preventDefault();
+  },
 
-  ctx.lineWidth = width;
-  ctx.lineCap = "round";
+  onTouchMove(e) {
+    const touch = e.touches[0];
+    this.onMove(touch);
+    e.preventDefault();
+  },
 
-  if (currentMode === "pen") {
-    ctx.globalCompositeOperation = "source-over";
-    ctx.strokeStyle = color;
-  } else {
-    ctx.globalCompositeOperation = "destination-out";
-  }
+  onEnd() {
+    this.drawing = false;
+    this.ctx.globalCompositeOperation = "source-over";
+  },
 
-  ctx.lineTo(e.offsetX, e.offsetY);
-  ctx.stroke();
-});
-// マウスアップ時に描画終了
-document.addEventListener("mouseup", () => {
-  if (drawing) log("mouseup → 描画終了");
-  drawing = false;
-  ctx.globalCompositeOperation = "source-over";
-});
-// タッチ開始時に描画開始
-canvas.addEventListener("touchstart", e => {
-  if (currentMode !== "pen" && currentMode !== "eraser") return;
+  getPos(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  },
 
-  const touch = e.touches[0];
-  const rect = canvas.getBoundingClientRect();
-  const x = touch.clientX - rect.left;
-  const y = touch.clientY - rect.top;
+  eraseColorAt(x, y) {
+    const radius = this.width;
+    const img = this.ctx.getImageData(x - radius, y - radius, radius * 2, radius * 2);
+    const data = img.data;
+    const [rT, gT, bT] = colorMap[this.color];
 
-  drawing = true;
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-});
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      if (colorDistance(r, g, b, rT, gT, bT) < 40) data[i + 3] = 0;
+    }
 
-canvas.addEventListener("touchmove", e => {
-  if (!drawing) return;
+    this.ctx.putImageData(img, x - radius, y - radius);
+  },
+  clearAll() {
+  this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+},
 
-  const touch = e.touches[0];
-  const rect = canvas.getBoundingClientRect();
-  const x = touch.clientX - rect.left;
-  const y = touch.clientY - rect.top;
-
-  // ツールバーより上は描かない
-  const toolbar = document.getElementById("drawToolbar");
-  const limitY = toolbar.getBoundingClientRect().bottom;
-  if (touch.clientY < limitY) return;
-
-  const color = document.getElementById("colorSelect").value;
-  const width = +document.getElementById("widthSelect").value;
-
-  ctx.lineWidth = width;
-  ctx.lineCap = "round";
-
-  if (currentMode === "pen") {
-    ctx.globalCompositeOperation = "source-over";
-    ctx.strokeStyle = color;
-  } else {
-    ctx.globalCompositeOperation = "destination-out";
-  }
-
-  ctx.lineTo(x, y);
-  ctx.stroke();
-
-  e.preventDefault(); // スクロール防止
-});
-
-canvas.addEventListener("touchend", () => {
-  drawing = false;
-  ctx.globalCompositeOperation = "source-over";
-});
-
-// ツール変更時
-document.getElementById("toolSelect").addEventListener("change", e => {
-  currentMode = e.target.value;
-  log("モード変更", currentMode);
-  updateCanvasMode();
-});
-// 描画モード更新
-function updateCanvasMode() {
-  const canvas = document.getElementById("drawLayer");
-  const pe = (currentMode === "open") ? "none" : "auto";
-  canvas.style.pointerEvents = pe;
-  log("pointer-events 更新 →", pe);
-}
-document.getElementById("clearAll").addEventListener("click", () => {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-});
-document.getElementById("clearColor").addEventListener("click", () => {
-  const targetColor = document.getElementById("colorSelect").value;
-
-  // 色名 → RGB に変換
-  const colorMap = {
-    red:    [255, 0, 0],
-    purple: [128, 0, 128],
-    blue:   [0, 0, 255],
-    yellow: [255, 255, 0],
-    green:  [0, 128, 0],
-    white:  [255, 255, 255],
-    black:  [0, 0, 0]
-  };
-
-  const [rT, gT, bT] = colorMap[targetColor];
-
-  const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+clearColor() {
+  const [rT, gT, bT] = colorMap[this.color];
+  const img = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
   const data = img.data;
 
   for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-
-    // 色が一致したら透明化
-  if (colorDistance(r, g, b, rT, gT, bT) < 20) {
-  data[i + 3] = 0;
-}
+    const r = data[i], g = data[i+1], b = data[i+2];
+    if (colorDistance(r, g, b, rT, gT, bT) < 40) data[i+3] = 0;
   }
 
-  ctx.putImageData(img, 0, 0);
-});
+  this.ctx.putImageData(img, 0, 0);
+}
+};
+
 function colorDistance(r1, g1, b1, r2, g2, b2) {
   return Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
 }
-// ====== 画面サイズをボードサイズに合わせる ======
+document.querySelectorAll(".tool-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tool-btn").forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    drawManager.mode = btn.dataset.tool;
+    updateCanvasMode();
+  });
+});
+
+document.querySelectorAll(".color-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".color-btn").forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    drawManager.color = btn.dataset.color;
+  });
+});
+document.getElementById("clearAll").addEventListener("click", () => drawManager.clearAll());
+document.getElementById("clearColor").addEventListener("click", () => drawManager.clearColor());
 function resizeCanvasToBoard() {
   const boardEl = document.getElementById("board");
-  const canvas  = document.getElementById("drawLayer");
+  const canvas = drawManager.canvas;
+  const ctx = drawManager.ctx;
 
-  // 盤面のサイズをコピー
+  // ★ 1. 今の描画内容を保存
+  const oldImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  // ★ 2. キャンバスのサイズを盤面に合わせて変更
   canvas.width  = boardEl.offsetWidth*2;
   canvas.height = boardEl.offsetHeight*2;
 
-  // 盤面の位置に合わせる
-  canvas.style.top  = boardEl.offsetTop + "px";
-  canvas.style.left = boardEl.offsetLeft + "px";
+  // ★ 3. サイズ変更後は ctx がリセットされるので取り直す
+  drawManager.ctx = canvas.getContext("2d");
+
+  // ★ 4. 保存した画像を新しいサイズに描き戻す
+  drawManager.ctx.putImageData(oldImage, 0, 0);
 }
-window.addEventListener("resize", resizeCanvasToBoard);
+document.getElementById("widthSelect").addEventListener("change", e => {
+  drawManager.width = +e.target.value;
+});
+function updateCanvasMode() {
+  const canvas = document.getElementById("drawLayer");
+  const pe = (drawManager.mode === "open") ? "none" : "auto";
+  canvas.style.pointerEvents = pe;
+}
