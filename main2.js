@@ -295,7 +295,12 @@ _buildBoardUI() {
     const d = document.createElement("div");
     d.className = "cell " + (((cell.r + cell.c) % 2 === 0) ? "light" : "dark");
 
-    d.addEventListener("click", () => this.openCell(cell));
+d.addEventListener("click", () => {
+  if (currentMode === "open") {
+    this.openCell(cell);
+  }
+  // pen / eraser のときは何もしない（canvas が描画を受け取る）
+});
     d.addEventListener("contextmenu", e => {
       e.preventDefault();
       this.toggleFlag(cell);
@@ -587,8 +592,9 @@ console.log("startGame params:", rows, cols, mines, placementKey, exploreKey, nu
 
   currentGame = new Game(rows, cols, mines, { placement, explore, number });
   await currentGame.init(seed);
+resizeCanvasToBoard();
 
-    document.getElementById("attemptCounter").classList.add("hidden");
+document.getElementById("attemptCounter").classList.add("hidden");
 // ← 完了で非表示
   }, 10);
 }
@@ -739,7 +745,176 @@ colsInput.step = 1;
     // 地雷数の最大値を更新
 //console.log(`地雷数ステップを ${step} に設定 (ルール: ${rule})`);
 }
+// ====== 画面サイズをボードサイズに合わせる ======
+const canvas = document.getElementById("drawLayer");
+const ctx = canvas.getContext("2d");
+let drawing = false;
+let currentMode = "open";
 
+function log(...args) {
+  console.log("[DRAW]", ...args);
+}
+// マウスダウン時に描画開始
+canvas.addEventListener("mousedown", e => {
+  log("mousedown", { mode: currentMode, x: e.offsetX, y: e.offsetY });
 
+  if (currentMode !== "pen" && currentMode !== "eraser") {
+    log("→ 描画モードではないので無視");
+    return;
+  }
 
+  drawing = true;
+  ctx.beginPath();
+  ctx.moveTo(e.offsetX, e.offsetY);
+  log("→ 描画開始");
+});
+// マウス移動時に描画
+canvas.addEventListener("mousemove", e => {
+  if (!drawing) return;
 
+  // ★ ツールバーより上は描かない
+  const toolbar = document.getElementById("drawToolbar");
+  const limitY = toolbar.getBoundingClientRect().bottom;
+
+  if (e.clientY < limitY) {
+    return; // 描画しない
+  }
+
+  const color = document.getElementById("colorSelect").value;
+  const width = +document.getElementById("widthSelect").value;
+
+  ctx.lineWidth = width;
+  ctx.lineCap = "round";
+
+  if (currentMode === "pen") {
+    ctx.globalCompositeOperation = "source-over";
+    ctx.strokeStyle = color;
+  } else {
+    ctx.globalCompositeOperation = "destination-out";
+  }
+
+  ctx.lineTo(e.offsetX, e.offsetY);
+  ctx.stroke();
+});
+// マウスアップ時に描画終了
+document.addEventListener("mouseup", () => {
+  if (drawing) log("mouseup → 描画終了");
+  drawing = false;
+  ctx.globalCompositeOperation = "source-over";
+});
+// タッチ開始時に描画開始
+canvas.addEventListener("touchstart", e => {
+  if (currentMode !== "pen" && currentMode !== "eraser") return;
+
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const x = touch.clientX - rect.left;
+  const y = touch.clientY - rect.top;
+
+  drawing = true;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+});
+
+canvas.addEventListener("touchmove", e => {
+  if (!drawing) return;
+
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const x = touch.clientX - rect.left;
+  const y = touch.clientY - rect.top;
+
+  // ツールバーより上は描かない
+  const toolbar = document.getElementById("drawToolbar");
+  const limitY = toolbar.getBoundingClientRect().bottom;
+  if (touch.clientY < limitY) return;
+
+  const color = document.getElementById("colorSelect").value;
+  const width = +document.getElementById("widthSelect").value;
+
+  ctx.lineWidth = width;
+  ctx.lineCap = "round";
+
+  if (currentMode === "pen") {
+    ctx.globalCompositeOperation = "source-over";
+    ctx.strokeStyle = color;
+  } else {
+    ctx.globalCompositeOperation = "destination-out";
+  }
+
+  ctx.lineTo(x, y);
+  ctx.stroke();
+
+  e.preventDefault(); // スクロール防止
+});
+
+canvas.addEventListener("touchend", () => {
+  drawing = false;
+  ctx.globalCompositeOperation = "source-over";
+});
+
+// ツール変更時
+document.getElementById("toolSelect").addEventListener("change", e => {
+  currentMode = e.target.value;
+  log("モード変更", currentMode);
+  updateCanvasMode();
+});
+// 描画モード更新
+function updateCanvasMode() {
+  const canvas = document.getElementById("drawLayer");
+  const pe = (currentMode === "open") ? "none" : "auto";
+  canvas.style.pointerEvents = pe;
+  log("pointer-events 更新 →", pe);
+}
+document.getElementById("clearAll").addEventListener("click", () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+});
+document.getElementById("clearColor").addEventListener("click", () => {
+  const targetColor = document.getElementById("colorSelect").value;
+
+  // 色名 → RGB に変換
+  const colorMap = {
+    red:    [255, 0, 0],
+    purple: [128, 0, 128],
+    blue:   [0, 0, 255],
+    yellow: [255, 255, 0],
+    green:  [0, 128, 0],
+    white:  [255, 255, 255],
+    black:  [0, 0, 0]
+  };
+
+  const [rT, gT, bT] = colorMap[targetColor];
+
+  const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = img.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+
+    // 色が一致したら透明化
+  if (colorDistance(r, g, b, rT, gT, bT) < 20) {
+  data[i + 3] = 0;
+}
+  }
+
+  ctx.putImageData(img, 0, 0);
+});
+function colorDistance(r1, g1, b1, r2, g2, b2) {
+  return Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
+}
+// ====== 画面サイズをボードサイズに合わせる ======
+function resizeCanvasToBoard() {
+  const boardEl = document.getElementById("board");
+  const canvas  = document.getElementById("drawLayer");
+
+  // 盤面のサイズをコピー
+  canvas.width  = boardEl.offsetWidth*2;
+  canvas.height = boardEl.offsetHeight*2;
+
+  // 盤面の位置に合わせる
+  canvas.style.top  = boardEl.offsetTop + "px";
+  canvas.style.left = boardEl.offsetLeft + "px";
+}
+window.addEventListener("resize", resizeCanvasToBoard);

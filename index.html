@@ -223,7 +223,16 @@ body {
   border-radius: 10px;
   z-index: 9999;
 }
-
+/* 描画層 */
+#drawLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 200%;
+  z-index: 10;
+  pointer-events: none;
+}
 
 </style>
 </head>
@@ -356,12 +365,40 @@ body {
     <input type="checkbox" id="cheatToggle"> チートモード
   </label>
 </div>
-<div id="attemptCounter" class="hidden">試行中: 0 回</div>
-  
-    <!-- 盤面 -->
-<div id="boardWrapper">
-  <div id="board" class="board"></div>
+<!-- ツールボックス -->
+<div id="drawToolbar">
+  <select id="toolSelect">
+  <option value="open">セルを開ける</option>
+  <option value="pen">ペン</option>
+  <option value="eraser">消しゴム</option>
+</select>
 
+  <select id="colorSelect">
+    <option value="red">赤</option>
+    <option value="purple">紫</option>
+    <option value="blue">青</option>
+    <option value="yellow">黄</option>
+    <option value="green">緑</option>
+    <option value="white">白</option>
+    <option value="black">黒</option>
+  </select>
+
+  <select id="widthSelect">
+    <option value="2">細</option>
+    <option value="4">中</option>
+    <option value="6">太</option>
+  </select>
+
+  <button id="clearColor">選択色を全消し</button>
+  <button id="clearAll">全消し</button>
+</div>
+
+<div id="attemptCounter" class="hidden">試行中: 0 回</div>
+  <!-- ボード -->
+<div id="boardWrapper">
+  <canvas id="drawLayer"></canvas>
+  <div id="board" class="board"></div>
+</div>
   <!-- ゲームオーバー -->
   <div id="gameover" class="overlay hidden">
     <div class="card">
