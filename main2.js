@@ -813,6 +813,7 @@ const drawManager = {
   onTouchMove(e) {
     const touch = e.touches[0];
     this.onMove(touch);
+    //スクロール禁止
     e.preventDefault();
   },
 
@@ -890,8 +891,8 @@ function resizeCanvasToBoard() {
   const oldImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
   // ★ 2. キャンバスのサイズを盤面に合わせて変更
-  canvas.width  = boardEl.offsetWidth*2;
-  canvas.height = boardEl.offsetHeight*2;
+  canvas.width  = boardEl.offsetWidth*1.4;
+  canvas.height = boardEl.offsetHeight*1.4;
 
   // ★ 3. サイズ変更後は ctx がリセットされるので取り直す
   drawManager.ctx = canvas.getContext("2d");
