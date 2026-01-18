@@ -180,7 +180,10 @@ height: 6px;
   outline: 2.5px solid rgba(255, 255, 0, 0.836);
   outline-offset: -2px;
 }
-
+.cell.highlight2 {
+  outline: 2.5px solid rgba(255, 4, 0, 0.836);
+  outline-offset: -2px;
+}
 .cell.origin {
   background-color: rgba(203, 88, 88, 0.4);
 }
@@ -326,9 +329,10 @@ height: 140%;
     <option value="big25">8方向(5*5)</option>
     <option value="big49">8方向(7*7)</option>
     <option value="knight">ナイト</option>
-    <option value="queen">クイーン視線</option>
+    <option value="queen">クイーン</option>
     <option value="Cross1">十字架(1)</option>
     <option value="Cross2">十字架(2)</option>
+    <option value="Alternating">十字架,8方向交互に</option>
     <option value="colorAxis">縦横に交互に</option>
     <option value="colorAxisDiagonal">縦横,斜めに交互に</option>
     <option value="Ring">リング</option>
@@ -337,14 +341,19 @@ height: 140%;
     <option value="Global">全範囲</option>
     </optgroup>
     <optgroup label="特殊探索">
-    <option value="untilMine">直線状に見つかるまで</option>
+    <option value="untilMine">クイーン状に見つかるまで</option>
     <option value="expandUntilMine">波紋状に見つかるまで</option>
     <option value="ExpandUntil2MinesTriangle">三角状に見つかるまで(2)</option>
-    <option value="clusterDetect">固まり検出</option>
     <option value="RippleChain">地雷から地雷に接続</option>
     <option value="Ripple">地雷数による波紋</option>
     <option value="SquareMineCount">地雷数による正方形(2)</option>
     <option value="DiamondMineCount">地雷数による菱形(+2)</option>
+  </optgroup>
+  <optgroup label="不変探索">
+    <option value="clusterDetect">固まり検出</option>
+    <option value="StraightLine">直線状に見つかるまで</option>
+    
+    </optgroup>
   </select>
 </label>
 

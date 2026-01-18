@@ -328,15 +328,37 @@ d.addEventListener("touchend", e => {
     // ★ 探索範囲の可視化
 // ハイライト
 d.addEventListener("mouseenter", () => {
-  const ns = this._getNeighbors(cell); // ← cell を渡す
-  for (const nb of ns) {
-    nb.el.classList.add("highlight");
+
+  // ★ StraightLineExplore のときだけ十字1マス
+  if (this.explore instanceof StraightLineExplore) {
+    const dirs = [[-1,0],[1,0],[0,-1],[0,1]]; // 上下左右
+    for (const [dr, dc] of dirs) {
+      const rr = cell.r + dr;
+      const cc = cell.c + dc;
+      if (rr >= 0 && rr < this.board.rows && cc >= 0 && cc < this.board.cols) {
+        const nb = this.board.getCell(rr, cc);
+        nb.el.classList.add("highlight2");
+      }
+    }
+    return; // ★ ここで終了（他ルールには行かない）
   }
+
+  // ★ それ以外の探索ルールは従来どおり neighbors を光らせる
+  const ns = this._getNeighbors(cell);
+  for (const nb of ns) {
+    //ルールによって色を変える
+    if(this.explore instanceof ClusterDetectExplore){   
+      nb.el.classList.add("highlight2");
+    }else{
+       nb.el.classList.add("highlight");
+  }
+}
 });
 
     d.addEventListener("mouseleave", () => {
       for (const c of this.board.cells) {
         c.el.classList.remove("highlight");
+        c.el.classList.remove("highlight2");
       }
     });
 

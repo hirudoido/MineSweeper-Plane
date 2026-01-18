@@ -1846,6 +1846,81 @@ class Diamond3Explore extends ExploreStrategy {
     return out;
   }
 }
+// 上下左右2マス,3*3, 偶数行奇数列
+class AlternatingExplore extends ExploreStrategy {
+
+  neighbors(board, r, c) {
+    const out = [];
+
+    // ★ 偶数 → 3×3
+    if ((r + c) % 2 === 0) {
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const rr = r + dr, cc = c + dc;
+          if (rr >= 0 && rr < board.rows && cc >= 0 && cc < board.cols) {
+            out.push(board.getCell(rr, cc));
+          }
+        }
+      }
+      return out;
+    }
+
+    // ★ 奇数 → 十字（上下左右に2マス）
+    const dirs = [
+      [-1, 0], [-2, 0],  // 上に2マス
+      [1, 0], [2, 0],    // 下に2マス
+      [0, -1], [0, -2],  // 左に2マス
+      [0, 1], [0, 2],    // 右に2マス
+    ];
+
+    for (const [dr, dc] of dirs) {
+      const rr = r + dr, cc = c + dc;
+      if (rr >= 0 && rr < board.rows && cc >= 0 && cc < board.cols) {
+        out.push(board.getCell(rr, cc));
+      }
+    }
+
+    return out;
+  }
+}
+// 上下左右見つかるまで
+class StraightLineExplore extends ExploreStrategy {
+
+  neighbors(board, r, c) {
+    const out = [];
+
+    // 上方向
+    for (let rr = r - 1; rr >= 0; rr--) {
+      const cell = board.getCell(rr, c);
+      out.push(cell);
+      if (cell.mine) break; // ★ 地雷に当たったら止まる
+    }
+
+    // 下方向
+    for (let rr = r + 1; rr < board.rows; rr++) {
+      const cell = board.getCell(rr, c);
+      out.push(cell);
+      if (cell.mine) break;
+    }
+
+    // 左方向
+    for (let cc = c - 1; cc >= 0; cc--) {
+      const cell = board.getCell(r, cc);
+      out.push(cell);
+      if (cell.mine) break;
+    }
+
+    // 右方向
+    for (let cc = c + 1; cc < board.cols; cc++) {
+      const cell = board.getCell(r, cc);
+      out.push(cell);
+      if (cell.mine) break;
+    }
+
+    return out;
+  }
+}
 // ====== 数字ルール実装 ======
 // 総数ルール（標準）
 class TotalNumberRule extends NumberRule {
@@ -2822,7 +2897,9 @@ const exploreMap = {
    SquareMineCount:SquareMineCountExplore,
    DiamondMineCount:DiamondMineCountExplore,
     big49:Big49Explore,
-    Diamond3:Diamond3Explore
+    Diamond3:Diamond3Explore,
+    Alternating:AlternatingExplore,
+    StraightLine:StraightLineExplore
 
 };
 
