@@ -814,7 +814,7 @@ const drawManager = {
     const touch = e.touches[0];
     this.onMove(touch);
     //スクロール禁止
-    //e.preventDefault();
+    e.preventDefault();
   },
 
   onEnd() {
@@ -882,6 +882,28 @@ document.querySelectorAll(".color-btn").forEach(btn => {
 });
 document.getElementById("clearAll").addEventListener("click", () => drawManager.clearAll());
 document.getElementById("clearColor").addEventListener("click", () => drawManager.clearColor());
+drawManager.canvas.addEventListener("touchstart", e => {
+  if (e.touches.length >= 2) {
+    // ★ 2本指以上 → スクロール許可（描画しない）
+    drawManager.drawing = false;
+    return;
+  }
+
+  // ★ 1本指 → 描画開始
+  drawManager.onStart(e.touches[0]);
+  e.preventDefault();
+});
+
+drawManager.canvas.addEventListener("touchmove", e => {
+  if (e.touches.length >= 2) {
+    // ★ 2本指 → スクロールさせる（preventDefaultしない）
+    return;
+  }
+
+  // ★ 1本指 → 描画
+  drawManager.onMove(e.touches[0]);
+  e.preventDefault();
+});
 function resizeCanvasToBoard() {
   const boardEl = document.getElementById("board");
   const canvas = drawManager.canvas;
