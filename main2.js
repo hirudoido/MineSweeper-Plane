@@ -805,26 +805,26 @@ const drawManager = {
   },
 
   onTouchStart(e) {
-    const touch = e.touches[0];
-      if (e.touches.length >= 2) {
-    // ★ 2本指以上 → スクロール許可（描画しない）
-    drawManager.drawing = false;
-    return;
-  }
+    if (e.touches.length >= 2) {
+      // ★ 2本指以上 → スクロール許可（描画しない）
+      drawManager.drawing = false;
+      
+    }else{
+        const touch = e.touches[0];
     this.onStart(touch);
-    e.preventDefault();
+    e.preventDefault();}
   },
 
   onTouchMove(e) {
+    if (e.touches.length >= 2) {
+      // ★ 2本指 → スクロールさせる（preventDefaultしない）
+      return;
+    }else{
+    
     const touch = e.touches[0];
-     if (e.touches.length >= 2) {
-    // ★ 2本指 → スクロールさせる（preventDefaultしない）
-    return;
-  }
-
     this.onMove(touch);
     //スクロール禁止
-    e.preventDefault();
+    e.preventDefault();}
   },
 
   onEnd() {
