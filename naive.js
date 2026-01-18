@@ -2719,6 +2719,64 @@ class HorizontalSplitCountRule extends NumberRule {
     return cell.value === "左0 右0";
   }
 }
+// 固まり個数ルール
+class ClusterQuantityNumberRule extends NumberRule {
+
+  calculate(cell, neighbors) {
+    // neighbors 内の地雷だけを対象にする
+    const mines = neighbors.filter(nb => nb.mine);
+
+    const visited = new Set();
+    let groupCount = 0;
+
+    for (const m of mines) {
+      const key = `${m.r},${m.c}`;
+      if (visited.has(key)) continue;
+
+      // ★ 新しい固まりを探索
+      this._floodLocalCluster(m, neighbors, visited);
+      groupCount++;
+    }
+
+    return groupCount; // ★ 固まり数だけ返す
+  }
+
+  // ★ neighbors 内だけで BFS する
+  _floodLocalCluster(start, neighbors, visited) {
+    const q = [start];
+
+    while (q.length) {
+      const cur = q.pop();
+      const key = `${cur.r},${cur.c}`;
+      if (visited.has(key)) continue;
+      visited.add(key);
+
+      // 4方向だけで繋がっている地雷を追加
+      const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+      for (const [dr, dc] of dirs) {
+        const rr = cur.r + dr;
+        const cc = cur.c + dc;
+
+        // neighbors 内にある地雷だけを対象にする
+        const nb = neighbors.find(n => n.r === rr && n.c === cc && n.mine);
+        if (nb) q.push(nb);
+      }
+    }
+  }
+
+  render(cell) {
+    // 地雷セルは普通に地雷表示
+    if (cell.mine) return "💣";
+
+    // 数字セルは固まり数をそのまま表示
+    if (!cell.value) return "";
+    return String(cell.value);
+  }
+
+  isZero(cell) {
+    return !cell.value;
+  }
+}
 // ====== ★ここでマップを定義 ======
 const placementMap = {
   random: RandomPlacement,
@@ -2793,7 +2851,8 @@ const numberMap = {
   Percent:PercentNumberRule,
 ManhattanVector: ManhattanVectorRule,
 VerticalSplit: VerticalSplitCountRule,
-HorizontalSplit: HorizontalSplitCountRule
+HorizontalSplit: HorizontalSplitCountRule,
+ClusterQuantity:ClusterQuantityNumberRule
 };
 
 
