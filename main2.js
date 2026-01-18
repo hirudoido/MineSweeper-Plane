@@ -807,7 +807,7 @@ const drawManager = {
   onTouchStart(e) {
     const touch = e.touches[0];
     this.onStart(touch);
-    //e.preventDefault();
+    e.preventDefault();
   },
 
   onTouchMove(e) {
