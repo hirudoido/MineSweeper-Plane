@@ -807,14 +807,14 @@ const drawManager = {
   onTouchStart(e) {
     const touch = e.touches[0];
     this.onStart(touch);
-    e.preventDefault();
+    //e.preventDefault();
   },
 
   onTouchMove(e) {
     const touch = e.touches[0];
     this.onMove(touch);
     //スクロール禁止
-    e.preventDefault();
+    //e.preventDefault();
   },
 
   onEnd() {
