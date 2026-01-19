@@ -1255,6 +1255,169 @@ for (const base of baseAngles) {
     }
   }
 }
+// リダクションルック
+class ReducedLuckPlacement extends PlacementStrategy {
+
+  place(board, mineCount, rng, excludeIndex = -1) {
+    const total = board.rows * board.cols;
+
+    // ランダム配置
+    for (const c of board.cells) c.mine = false;
+    let placed = 0;
+    while (placed < mineCount) {
+      const idx = Math.floor(rng() * total);
+      if (idx === excludeIndex) continue;
+      const cell = board.cells[idx];
+      if (!cell.mine) { cell.mine = true; placed++; }
+    }
+
+    // NG を部分修正していく
+    let changed = true;
+    let safety = 0;
+    while (changed && safety < 400) {
+      changed = false;
+      if (this._fix2x2(board, rng)) changed = true;
+      if (this._fixIsolated(board, rng)) changed = true;
+      if (this._fixDiagonalIsolated(board, rng)) changed = true;
+      if (this._fix121(board, rng)) changed = true;
+      if (this._fixEdge5050(board, rng)) changed = true;   // ★ 追加
+      safety++;
+    }
+  }
+
+  // --- 2×2 固まり ---
+  _fix2x2(board, rng) {
+    for (let r = 0; r < board.rows - 1; r++) {
+      for (let c = 0; c < board.cols - 1; c++) {
+        const a = board.getCell(r, c);
+        const b = board.getCell(r, c+1);
+        const d = board.getCell(r+1, c);
+        const e = board.getCell(r+1, c+1);
+        if (a.mine && b.mine && d.mine && e.mine) {
+          [a,b,d,e][Math.floor(rng()*4)].mine = false;
+          this._placeSafeMine(board, rng);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // --- 独立地雷 ---
+  _fixIsolated(board, rng) {
+    for (const cell of board.cells) {
+      if (!cell.mine) continue;
+      if (!this._hasAdjacentMine(board, cell)) {
+        cell.mine = false;
+        this._placeSafeMine(board, rng);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // --- 斜め孤立 ---
+  _fixDiagonalIsolated(board, rng) {
+    for (const cell of board.cells) {
+      if (!cell.mine) continue;
+
+      let ortho = 0, diag = 0;
+
+      for (const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        const rr = cell.r + dr, cc = cell.c + dc;
+        if (rr>=0 && cc>=0 && rr<board.rows && cc<board.cols) {
+          if (board.getCell(rr,cc).mine) ortho++;
+        }
+      }
+
+      for (const [dr,dc] of [[1,1],[1,-1],[-1,1],[-1,-1]]) {
+        const rr = cell.r + dr, cc = cell.c + dc;
+        if (rr>=0 && cc>=0 && rr<board.rows && cc<board.cols) {
+          if (board.getCell(rr,cc).mine) diag++;
+        }
+      }
+
+      if (diag > 0 && ortho === 0) {
+        cell.mine = false;
+        this._placeSafeMine(board, rng);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // --- 1-2-1（横方向） ---
+  _fix121(board, rng) {
+    for (let r = 0; r < board.rows; r++) {
+      for (let c = 1; c < board.cols - 1; c++) {
+        const L = board.getCell(r, c-1).mine;
+        const M = board.getCell(r, c).mine;
+        const R = board.getCell(r, c+1).mine;
+
+        if (L && !M && R) {
+          const target = Math.random() < 0.5 ? board.getCell(r,c-1) : board.getCell(r,c+1);
+          target.mine = false;
+          this._placeSafeMine(board, rng);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // --- ★ 50/50（端の2セル地雷） ---
+  _fixEdge5050(board, rng) {
+    // 左端
+    for (let r = 0; r < board.rows; r++) {
+      const a = board.getCell(r, 0);
+      const b = board.getCell(r, 1);
+      if (a.mine && b.mine) {
+        (Math.random() < 0.5 ? a : b).mine = false;
+        this._placeSafeMine(board, rng);
+        return true;
+      }
+    }
+
+    // 右端
+    for (let r = 0; r < board.rows; r++) {
+      const a = board.getCell(r, board.cols - 1);
+      const b = board.getCell(r, board.cols - 2);
+      if (a.mine && b.mine) {
+        (Math.random() < 0.5 ? a : b).mine = false;
+        this._placeSafeMine(board, rng);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // --- 隣接地雷があるか ---
+  _hasAdjacentMine(board, cell) {
+    for (let dr=-1; dr<=1; dr++) {
+      for (let dc=-1; dc<=1; dc++) {
+        if (dr===0 && dc===0) continue;
+        const rr = cell.r+dr, cc = cell.c+dc;
+        if (rr>=0 && cc>=0 && rr<board.rows && cc<board.cols) {
+          if (board.getCell(rr,cc).mine) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // --- 安全な場所に地雷を置く ---
+  _placeSafeMine(board, rng) {
+    while (true) {
+      const idx = Math.floor(rng() * board.cells.length);
+      const cell = board.cells[idx];
+      if (!cell.mine && this._hasAdjacentMine(board, cell)) {
+        cell.mine = true;
+        return;
+      }
+    }
+  }
+}
 //探索範囲  の実装
 // 8方向探索（標準マインスイーパー）
 class Normal8Explore extends ExploreStrategy {
@@ -2405,18 +2568,19 @@ class TruthLieNumberRule extends NumberRule {
     const truth = cell.value;
     let lie;
 
-    if (truth <= 3) {
-      lie = truth + Math.floor( Math.random() * 2 )+2; // 1,2,3 の場合は必ず +2か3
-    } else {
-      // それ以外は ±2 のどちらかをランダムに
-      lie = (Math.random() < 0.5) ? truth - Math.floor( Math.random() * 2 )-2 : truth + Math.floor( Math.random() * 2 )+2;
-      if (lie < 0) lie = truth + Math.floor( Math.random() * 2 )+2; // マイナスは避ける
-    }
+  if (truth <= 3) {
+  lie = truth + Math.floor(Math.random() * 2 + 2); // 2〜3を足す
+} else {
+  const delta = Math.floor(Math.random() * 2 + 2); // 2〜3
+  lie = (Math.random() < 0.5) ? truth - delta : truth + delta;
+  if (lie < 0) lie = truth + delta;
+}
 
     // 大きい順に並べる
     const values = [truth, lie].sort((a, b) => b - a);
 
     return `${values[0]}, ${values[1]}`;
+
   }
 }
 // 隣接セルの平均値
@@ -2872,7 +3036,8 @@ noOrthogonal: NoOrthogonalPlacement,
 Cluster4Isolated:Cluster4IsolatedPlacement,
 TetrisMino:TetrisMinoPlacement,
 Lightning:LightningPlacement,
-SpiderWeb:SpiderWebPlacement
+SpiderWeb:SpiderWebPlacement,
+ReducedLuck:ReducedLuckPlacement
 
 };
 

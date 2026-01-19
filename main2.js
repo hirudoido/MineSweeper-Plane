@@ -621,7 +621,7 @@ console.log("startGame params:", rows, cols, mines, placementKey, exploreKey, nu
 
 document.getElementById("attemptCounter").classList.add("hidden");
 // ← 完了で非表示
-  }, 10);
+  }, 0.05);
 }
 
 
