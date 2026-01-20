@@ -301,6 +301,7 @@ d.addEventListener("click", () => {
   
   // pen / eraser のときは何もしない（canvas が描画を受け取る）
 });
+// --- 右クリックで旗 ---
     d.addEventListener("contextmenu", e => {
       e.preventDefault();
       this.toggleFlag(cell);
@@ -830,8 +831,10 @@ const drawManager = {
     if (e.touches.length >= 2) {
       // ★ 2本指以上 → スクロール許可（描画しない）
       drawManager.drawing = false;
+      console.log("2本指以上");
       return;
     }else{
+      console.log("touchstart");
         const touch = e.touches[0];
     this.onStart(touch);
     e.preventDefault();}
@@ -841,10 +844,10 @@ const drawManager = {
     if (e.touches.length >= 2) {
       // ★ 2本指 → スクロールさせる（preventDefaultしない）
       this.drawing = false;
-
+console.log("2本指");
       return;
     }else{
-    
+    console.log("touchmove");
     const touch = e.touches[0];
     this.onMove(touch);
     //スクロール禁止
