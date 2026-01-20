@@ -840,6 +840,8 @@ const drawManager = {
   onTouchMove(e) {
     if (e.touches.length >= 2) {
       // ★ 2本指 → スクロールさせる（preventDefaultしない）
+      this.drawing = false;
+
       return;
     }else{
     
