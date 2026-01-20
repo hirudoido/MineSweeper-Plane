@@ -830,7 +830,7 @@ const drawManager = {
     if (e.touches.length >= 2) {
       // ★ 2本指以上 → スクロール許可（描画しない）
       drawManager.drawing = false;
-      
+      return;
     }else{
         const touch = e.touches[0];
     this.onStart(touch);
