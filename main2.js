@@ -788,6 +788,7 @@ const drawManager = {
   mode: "open",
   color: "red",
   width: 2,
+    touchTimer: null,
 
 
 
@@ -829,10 +830,10 @@ const drawManager = {
     this.ctx.stroke();
   },
 
-
+/*
   onTouchStart(e) {
   // すでにタイマーがあれば消す
-  //if (touchTimer) clearTimeout(touchTimer);
+  if (touchTimer) clearTimeout(touchTimer);
 
   // 2本指以上 → スクロール・ズーム
   if (e.touches.length >= 2) {
@@ -875,9 +876,85 @@ const drawManager = {
 
   onEnd() {
     this.drawing = false;
-    this.ctx.globalCompositeOperation = "source-over";
+     if (touchTimer) clearTimeout(touchTimer);
+
+    //this.ctx.globalCompositeOperation = "source-over";
   
-  },
+  },*/
+  
+
+onTouchStart(e) {
+  if (e.touches.length >= 2) {
+    this.drawing = false;
+    return;
+  }
+
+  // ★ モード判定をタッチ側でも行う
+  if (!["pen", "eraser", "colorEraser"].includes(this.mode)) {
+    this.drawing = false;
+    return;
+  }
+
+  const touch = e.touches[0];
+  const { x, y } = this.getPos(touch);
+
+  this.drawing = true;
+  this.ctx.beginPath();
+  this.ctx.moveTo(x, y);
+
+  e.preventDefault();
+},
+
+
+
+onTouchMove(e) {
+  // 2本指 → スクロール・ズーム
+  if (e.touches.length >= 2) {
+    this.drawing = false;
+    return; // preventDefault しない
+  }
+
+  // 描画中のみ描く
+  if (!this.drawing) return;
+
+  const touch = e.touches[0];
+  const { x, y } = this.getPos(touch);
+
+  // ★ 色消しゴム（特定色だけ消す）
+  if (this.mode === "colorEraser") {
+    this.eraseColorAt(x, y);
+    e.preventDefault();
+    return;
+  }
+
+  // ★ 消しゴム（透明で消す）
+  if (this.mode === "eraser") {
+    this.ctx.lineWidth = this.width;
+    this.ctx.lineCap = "round";
+    this.ctx.globalCompositeOperation = "destination-out";
+    this.ctx.lineTo(x, y);
+    this.ctx.stroke();
+    e.preventDefault();
+    return;
+  }
+
+  // ★ ペン（通常描画）
+  if (this.mode === "pen") {
+    this.ctx.lineWidth = this.width;
+    this.ctx.lineCap = "round";
+    this.ctx.globalCompositeOperation = "source-over";
+    this.ctx.strokeStyle = this.color;
+    this.ctx.lineTo(x, y);
+    this.ctx.stroke();
+    e.preventDefault();
+    return;
+  }
+},
+
+onEnd() {
+  this.drawing = false;
+  if (this.touchTimer) clearTimeout(this.touchTimer);  // ← ★ これで安全
+},
 
   getPos(e) {
     const rect = this.canvas.getBoundingClientRect();
