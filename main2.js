@@ -830,59 +830,6 @@ const drawManager = {
     this.ctx.stroke();
   },
 
-/*
-  onTouchStart(e) {
-  // すでにタイマーがあれば消す
-  if (touchTimer) clearTimeout(touchTimer);
-
-  // 2本指以上 → スクロール・ズーム
-  if (e.touches.length >= 2) {
-    this.drawing = false;
-    console.log("2本指以上");
-    return; // preventDefault しない
-  }
-
-  // ★ 1本指 → すぐ描画せず、50ms 待って判定
-  const touch = e.touches[0];
-  touchTimer = setTimeout(() => {
-    // まだ1本指なら描画開始
-    if (e.touches.length === 1) {
-      console.log("1本指");
-      this.drawing = true;
-      this.onStart(touch);
-      e.preventDefault();
-    }
-  }, 50);
-},
-
-
-
-  onTouchMove(e) {
-  // 2本指 → スクロール・ズーム
-  if (e.touches.length >= 2) {
-    this.drawing = false;
-    console.log("2本指");
-    return; // preventDefault しない
-  }
-
-  // 描画中のみ描く
-  if (!this.drawing) return;
-  console.log("1本指!");
-  const touch = e.touches[0];
-    this.onMove(touch);
-  //e.preventDefault(); // 1本指描画中のみスクロール禁止
-},
-
-
-  onEnd() {
-    this.drawing = false;
-     if (touchTimer) clearTimeout(touchTimer);
-
-    //this.ctx.globalCompositeOperation = "source-over";
-  
-  },*/
-  
-
 onTouchStart(e) {
    if (e.touches.length >= 2) {
     // ★ キャンバスを一時的に無効化してスクロールを許可
