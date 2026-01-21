@@ -849,7 +849,6 @@ const drawManager = {
       console.log("1本指");
       this.drawing = true;
       this.onStart(touch);
-      e.preventDefault(); // ← ここで初めてスクロール禁止
     }
   }, 50);
 },
