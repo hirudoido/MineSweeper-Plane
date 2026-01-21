@@ -828,6 +828,7 @@ const drawManager = {
   },
 
   onTouchStart(e) {
+    const touch = e.touches[0];
     if (e.touches.length >= 2) {
       // ★ 2本指以上 → スクロール許可（描画しない）
       drawManager.drawing = false;
@@ -835,12 +836,12 @@ const drawManager = {
       return;
     }else{
       console.log("touchstart");
-        const touch = e.touches[0];
     this.onStart(touch);
     e.preventDefault();}
   },
 
   onTouchMove(e) {
+    const touch = e.touches[0];
     if (e.touches.length >= 2) {
       // ★ 2本指 → スクロールさせる（preventDefaultしない）
       this.drawing = false;
@@ -848,7 +849,6 @@ console.log("2本指");
       return;
     }else{
     console.log("touchmove");
-    const touch = e.touches[0];
     this.onMove(touch);
     //スクロール禁止
     e.preventDefault();}
