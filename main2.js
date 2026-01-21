@@ -829,29 +829,31 @@ const drawManager = {
 
   onTouchStart(e) {
     const touch = e.touches[0];
-    if (e.touches.length >= 2) {
+    if (e.touches.length = 1) {
+      console.log("touchstart");
+      this.onStart(touch);
+      e.preventDefault();
+      return;
+    }else{
       // ★ 2本指以上 → スクロール許可（描画しない）
       drawManager.drawing = false;
       console.log("2本指以上");
-      return;
-    }else{
-      console.log("touchstart");
-    this.onStart(touch);
-    e.preventDefault();}
+      }
   },
 
   onTouchMove(e) {
     const touch = e.touches[0];
-    if (e.touches.length >= 2) {
+    if (e.touches.length = 1) {
+      console.log("touchmove");
+      this.onMove(touch);
+      //スクロール禁止
+      e.preventDefault();
+      return;
+    }else{
       // ★ 2本指 → スクロールさせる（preventDefaultしない）
       this.drawing = false;
 console.log("2本指");
-      return;
-    }else{
-    console.log("touchmove");
-    this.onMove(touch);
-    //スクロール禁止
-    e.preventDefault();}
+}
   },
 
   onEnd() {
