@@ -884,10 +884,14 @@ const drawManager = {
   
 
 onTouchStart(e) {
-  if (e.touches.length >= 2) {
+   if (e.touches.length >= 2) {
+    // ★ キャンバスを一時的に無効化してスクロールを許可
+    this.canvas.style.pointerEvents = "none";
     this.drawing = false;
     return;
   }
+
+
 
   // ★ モード判定をタッチ側でも行う
   if (!["pen", "eraser", "colorEraser"].includes(this.mode)) {
@@ -897,6 +901,7 @@ onTouchStart(e) {
 
   const touch = e.touches[0];
   const { x, y } = this.getPos(touch);
+  this.canvas.style.pointerEvents = "auto";
 
   this.drawing = true;
   this.ctx.beginPath();
@@ -953,7 +958,11 @@ onTouchMove(e) {
 
 onEnd() {
   this.drawing = false;
-  if (this.touchTimer) clearTimeout(this.touchTimer);  // ← ★ これで安全
+
+  // ★ 指が離れたらキャンバスを元に戻す
+  this.canvas.style.pointerEvents = (this.mode === "open") ? "none" : "auto";
+
+  if (this.touchTimer) clearTimeout(this.touchTimer);
 },
 
   getPos(e) {
