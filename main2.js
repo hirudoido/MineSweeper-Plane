@@ -835,6 +835,7 @@ onTouchStart(e) {
     // ★ キャンバスを一時的に無効化してスクロールを許可
     this.canvas.style.pointerEvents = "none";
     this.drawing = false;
+    console.log("2本指以上",e.touches.length);
     return;
   }
 
@@ -866,6 +867,7 @@ onTouchMove(e) {
   // 2本指 → スクロール・ズーム
   if (e.touches.length >= 2) {
     this.drawing = false;
+    console.log("2本指",e.touches.length);
     return; // preventDefault しない
   }
 
@@ -901,7 +903,10 @@ onTouchMove(e) {
     this.ctx.strokeStyle = this.color;
     this.ctx.lineTo(x, y);
     this.ctx.stroke();
-    e.preventDefault();
+ if (e.touches.length = 1) {
+  console.log("1本指",e.touches.length);
+  e.preventDefault();
+  }
     return;
   }
 },
