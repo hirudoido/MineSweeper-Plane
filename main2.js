@@ -853,8 +853,11 @@ onTouchStart(e) {
   this.drawing = true;
   this.ctx.beginPath();
   this.ctx.moveTo(x, y);
-
+ if (e.touches.length = 1) {
+  console.log("1本指",e.touches.length);
   e.preventDefault();
+  }
+
 },
 
 
