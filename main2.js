@@ -856,7 +856,7 @@ onTouchStart(e) {
   this.ctx.moveTo(x, y);
  if (e.touches.length = 1) {
   console.log("1本指",e.touches.length);
-  e.preventDefault();
+  //e.preventDefault();
   }
 
 },
@@ -872,7 +872,7 @@ onTouchMove(e) {
   }
 
   // 描画中のみ描く
-  if (!this.drawing) return;
+  if (!this.drawing) console.log("描画中",e.touches.length);return;
 
   const touch = e.touches[0];
   const { x, y } = this.getPos(touch);

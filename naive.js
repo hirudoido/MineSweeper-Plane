@@ -1418,6 +1418,158 @@ class ReducedLuckPlacement extends PlacementStrategy {
     }
   }
 }
+// --- フラクタル島を置く ---
+class FractalIslandsPlacement extends PlacementStrategy {
+
+  place(board, mineCount, rng, excludeIndex = -1) {
+    // 全セルを初期化
+    for (const c of board.cells) c.mine = false;
+
+    // 再帰的に島を生成
+    this._makeIslands(board, 0, 0, board.rows, rng);
+
+    // 地雷数が多すぎる場合はランダム削減
+    let mines = board.cells.filter(c => c.mine).length;
+    while (mines > mineCount) {
+      const idx = Math.floor(rng() * board.cells.length);
+      const cell = board.cells[idx];
+      if (cell.mine) {
+        cell.mine = false;
+        mines--;
+      }
+    }
+
+    // 地雷数が少なすぎる場合はランダム追加
+    while (mines < mineCount) {
+      const idx = Math.floor(rng() * board.cells.length);
+      const cell = board.cells[idx];
+      if (!cell.mine) {
+        cell.mine = true;
+        mines++;
+      }
+    }
+  }
+
+  // --- 再帰的に島を作る ---
+  _makeIslands(board, r0, c0, size, rng) {
+    if (size < 2) return;
+
+    // ブロックを 2×2 に分割
+    const half = Math.floor(size / 2);
+
+    const blocks = [
+      [r0, c0],
+      [r0, c0 + half],
+      [r0 + half, c0],
+      [r0 + half, c0 + half]
+    ];
+
+    for (const [br, bc] of blocks) {
+      // 島の数（1〜2）
+      const islandCount = 1 + Math.floor(rng() * 2);
+
+      for (let i = 0; i < islandCount; i++) {
+        // 島の中心
+        const rr = br + Math.floor(rng() * half);
+        const cc = bc + Math.floor(rng() * half);
+
+        // 島の大きさ（1〜3）
+        const size = 1 + Math.floor(rng() * 3);
+
+        this._placeIsland(board, rr, cc, size, rng);
+      }
+
+      // 再帰
+      if (half >= 4) {
+        this._makeIslands(board, br, bc, half, rng);
+      }
+    }
+  }
+
+  // --- 島（クラスター）を置く ---
+  _placeIsland(board, r, c, size, rng) {
+    const dirs = [
+      [0,0], [1,0], [-1,0], [0,1], [0,-1]
+    ];
+
+    for (let i = 0; i < size; i++) {
+      const [dr, dc] = dirs[Math.floor(rng() * dirs.length)];
+      const rr = r + dr;
+      const cc = c + dc;
+
+      if (rr >= 0 && rr < board.rows && cc >= 0 && cc < board.cols) {
+        board.getCell(rr, cc).mine = true;
+      }
+    }
+  }
+}
+//運の固まり
+class Chaos12Placement extends PlacementStrategy {
+
+  place(board, mineCount, rng, excludeIndex = -1) {
+    // 全セル初期化
+    for (const c of board.cells) c.mine = false;
+
+    const total = board.rows * board.cols;
+
+    // --- ① まず「1」「2」を大量生成する ---
+    // 1: 孤立地雷をランダムに配置
+    let placed = 0;
+    while (placed < mineCount * 0.5) {
+      const idx = Math.floor(rng() * total);
+      if (idx === excludeIndex) continue;
+      const cell = board.cells[idx];
+      if (!cell.mine) {
+        cell.mine = true;
+        placed++;
+      }
+    }
+
+    // 2: ペア地雷（2 を作る）
+    while (placed < mineCount * 0.8) {
+      const idx = Math.floor(rng() * total);
+      if (idx === excludeIndex) continue;
+      const cell = board.cells[idx];
+      if (cell.mine) continue;
+
+      const r = cell.r, c = cell.c;
+      const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];
+      const [dr, dc] = dirs[Math.floor(rng() * dirs.length)];
+      const rr = r + dr, cc = c + dc;
+
+      if (rr>=0 && rr<board.rows && cc>=0 && cc<board.cols) {
+        const nb = board.getCell(rr, cc);
+        if (!nb.mine) {
+          cell.mine = true;
+          nb.mine = true;
+          placed += 2;
+        }
+      }
+    }
+
+    // --- ② 残りは「1」「2」以外の数字を作るためのクラスター ---
+    while (placed < mineCount) {
+      const idx = Math.floor(rng() * total);
+      if (idx === excludeIndex) continue;
+      const cell = board.cells[idx];
+      if (cell.mine) continue;
+
+      // 2×2 固まり（3,4,5 などを作る）
+      const r = cell.r, c = cell.c;
+      if (r < board.rows - 1 && c < board.cols - 1) {
+        const a = board.getCell(r, c);
+        const b = board.getCell(r, c+1);
+        const d = board.getCell(r+1, c);
+        const e = board.getCell(r+1, c+1);
+
+        if (!a.mine && !b.mine && !d.mine && !e.mine) {
+          a.mine = b.mine = d.mine = e.mine = true;
+          placed += 4;
+        }
+      }
+    }
+  }
+}
 //探索範囲  の実装
 // 8方向探索（標準マインスイーパー）
 class Normal8Explore extends ExploreStrategy {
@@ -3037,7 +3189,9 @@ Cluster4Isolated:Cluster4IsolatedPlacement,
 TetrisMino:TetrisMinoPlacement,
 Lightning:LightningPlacement,
 SpiderWeb:SpiderWebPlacement,
-ReducedLuck:ReducedLuckPlacement
+ReducedLuck:ReducedLuckPlacement,
+FractalIslands:FractalIslandsPlacement,
+Chaos12:Chaos12Placement
 
 };
 
