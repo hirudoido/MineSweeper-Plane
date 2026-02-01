@@ -348,7 +348,10 @@ d.addEventListener("mouseenter", () => {
   const ns = this._getNeighbors(cell);
   for (const nb of ns) {
     //ルールによって色を変える
-    if(this.explore instanceof ClusterDetectExplore){   
+   let skip = ["clusterDetect","RippleImmutable", "UntilMine5x5Immutable"];
+    //!skip.includes(search)
+     let  search =document.getElementById("explore").value;
+    if(skip.includes(search)){  
       nb.el.classList.add("highlight2");
     }else{
        nb.el.classList.add("highlight");
@@ -400,8 +403,14 @@ _calculateNumbers() {
 // Game 内の neighbors 呼び出し部分をラップする
 //ハイライトの可視化
 _getNeighbors(cell) {
-  if (this.explore instanceof ClusterDetectExplore) {
+  // ★ StraightLineExplore のときだけ十字1マス
+  let  search =document.getElementById("explore").value;
+  if (this.explore instanceof ClusterDetectExplore||search =="RippleImmutable") {
     const cross = new Cross4Explore();
+    return cross.neighbors(this.board, cell.r, cell.c);
+  }
+  if (search =="UntilMine5x5Immutable") {
+    const cross = new UntilMine5x5Explore();
     return cross.neighbors(this.board, cell.r, cell.c);
   }
   return this.explore.neighbors(this.board, cell.r, cell.c);
@@ -872,7 +881,7 @@ onTouchMove(e) {
   }
 
   // 描画中のみ描く
-  if (!this.drawing) console.log("描画中",e.touches.length);return;
+  if (!this.drawing){ console.log("描画中",e.touches.length);return;}
 
   const touch = e.touches[0];
   const { x, y } = this.getPos(touch);
@@ -880,7 +889,7 @@ onTouchMove(e) {
   // ★ 色消しゴム（特定色だけ消す）
   if (this.mode === "colorEraser") {
     this.eraseColorAt(x, y);
-    e.preventDefault();
+    //e.preventDefault();
     return;
   }
 

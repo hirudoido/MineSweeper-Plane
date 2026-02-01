@@ -2236,6 +2236,94 @@ class StraightLineExplore extends ExploreStrategy {
     return out;
   }
 }
+// 5*5見つかるまで
+
+class UntilMine5x5ImmutableExplore extends ExploreStrategy {
+  neighbors(board, r, c) {
+    const out = [];
+    const dirs = [
+      [1,0], [-1,0], [0,1], [0,-1],   // 縦横
+      [1,1], [1,-1], [-1,1], [-1,-1] // 斜め
+    ];
+
+    for (const [dr, dc] of dirs) {
+      for(let i = 1; i < 3; i++) {
+      let rr = r + dr*i, cc = c + dc*i;
+      if (rr < 0 || cc < 0 || rr >= board.rows || cc >= board.cols ) break;
+        const cell = board.getCell(rr, cc);
+            if (!cell) break;
+
+        out.push(cell);
+        if (cell.mine) {
+          // 地雷を見つけたらこの方向はストップ
+          break;
+        }
+      }
+    
+    }
+
+    return out;
+  }
+}
+// 5*5
+class UntilMine5x5Explore extends ExploreStrategy {
+  neighbors(board, r, c) {
+    const out = [];
+    const dirs = [
+      [1,0], [-1,0], [0,1], [0,-1],   // 縦横
+      [1,1], [1,-1], [-1,1], [-1,-1] // 斜め
+    ];
+
+    for (const [dr, dc] of dirs) {
+      for(let i = 1; i < 3; i++) {
+      let rr = r + dr*i, cc = c + dc*i;
+      if (rr < 0 || cc < 0 || rr >= board.rows || cc >= board.cols ) break;
+        const cell = board.getCell(rr, cc);
+            if (!cell) break;
+
+        out.push(cell);
+      
+      }
+    
+    }
+
+    return out;
+  }
+}
+// 8方向トーラス
+class Normal8torusExplore extends ExploreStrategy {
+  constructor({wrap=true} = {}) {
+    super();
+    this.wrap = wrap;
+  }
+
+  neighbors(board, r, c) {
+    const out = [];
+    const seen = new Set();
+    // 8方向のみ（自分自身を含めない）
+    const dirs = [
+      [1,0], [-1,0], [0,1], [0,-1],
+      [1,1], [1,-1], [-1,1], [-1,-1]
+    ];
+
+    for (const [dr, dc] of dirs) {
+      // ラップ処理を簡潔に
+      const rr = ((r + dr) % board.rows + board.rows) % board.rows;
+      const cc = ((c + dc) % board.cols + board.cols) % board.cols;
+      const cell = board.getCell(rr, cc);
+      // board.getCell が null を返す実装なら下行を使う（安全）
+      // if (!cell) continue;
+      const key = `${cell.r},${cell.c}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push(cell);
+      }
+    }
+    return out;
+  }
+}
+
+
 // ====== 数字ルール実装 ======
 // 総数ルール（標準）
 class TotalNumberRule extends NumberRule {
@@ -3211,6 +3299,7 @@ const exploreMap = {
   Diamond2:Diamond2Explore,
   RippleChain:RippleChainExplore,
   Ripple:RippleExplore,
+  RippleImmutable:RippleExplore,
   ExpandUntil2MinesTriangle:ExpandUntil2MinesTriangleExplore,
    Global: GlobalExplore,
    SquareMineCount:SquareMineCountExplore,
@@ -3218,7 +3307,12 @@ const exploreMap = {
     big49:Big49Explore,
     Diamond3:Diamond3Explore,
     Alternating:AlternatingExplore,
-    StraightLine:StraightLineExplore
+    StraightLine:StraightLineExplore,
+    UntilMine5x5Immutable:UntilMine5x5ImmutableExplore,
+    UntilMine5x5:UntilMine5x5Explore,
+    Normal8torus:Normal8torusExplore
+
+    
 
 };
 

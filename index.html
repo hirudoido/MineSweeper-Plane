@@ -333,8 +333,10 @@ height: 140%;
     <option value="normal8">8方向(3*3)</option>
     <option value="big25">8方向(5*5)</option>
     <option value="big49">8方向(7*7)</option>
+    <option value="Normal8torus">8方向(3*3,トーラス)</option>
     <option value="knight">ナイト</option>
     <option value="queen">クイーン</option>
+    <option value="UntilMine5x5">クイーン(2)</option>
     <option value="Cross1">十字架(1)</option>
     <option value="Cross2">十字架(2)</option>
     <option value="Alternating">十字架,8方向交互に</option>
@@ -346,18 +348,20 @@ height: 140%;
     <option value="Global">全範囲</option>
     </optgroup>
     <optgroup label="特殊探索">
-    <option value="untilMine">クイーン状に見つかるまで</option>
-    <option value="expandUntilMine">波紋状に見つかるまで</option>
-    <option value="ExpandUntil2MinesTriangle">三角状に見つかるまで(2)</option>
-    <option value="RippleChain">地雷から地雷に接続</option>
-    <option value="Ripple">地雷数による波紋</option>
-    <option value="SquareMineCount">地雷数による正方形(2)</option>
-    <option value="DiamondMineCount">地雷数による菱形(+2)</option>
-  </optgroup>
-  <optgroup label="不変探索">
-    <option value="clusterDetect">固まり検出</option>
-    <option value="StraightLine">直線状に見つかるまで</option>
-    
+      <option value="untilMine">クイーン状に発見まで</option>
+      <option value="expandUntilMine">波紋状に発見まで</option>
+      <option value="ExpandUntil2MinesTriangle">三角状に発見まで(2)</option>
+      <option value="RippleChain">地雷から地雷に接続</option>
+      <option value="Ripple">地雷数による波紋</option>
+      <option value="SquareMineCount">地雷数による正方形(2)</option>
+      <option value="DiamondMineCount">地雷数による菱形(+2)</option>
+    </optgroup>
+    <optgroup label="不変探索">
+      <option value="clusterDetect">固まり検出</option>
+      <option value="StraightLine">直線状に発見まで</option>
+      <option value="RippleImmutable">地雷数による波紋α</option>
+      <option value="UntilMine5x5Immutable">クイーン状に発見まで(2)</option>
+      
     </optgroup>
   </select>
 </label>
