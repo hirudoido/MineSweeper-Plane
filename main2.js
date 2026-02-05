@@ -294,11 +294,10 @@ _buildBoardUI() {
   for (const cell of this.board.cells) {
     const d = document.createElement("div");
     d.className = "cell " + (((cell.r + cell.c) % 2 === 0) ? "light" : "dark");
-
+// --- セルクリック ---
 d.addEventListener("click", () => {
- 
+  if (longPress) return;
     this.openCell(cell);
-  
   // pen / eraser のときは何もしない（canvas が描画を受け取る）
 });
 // --- 右クリックで旗 ---
@@ -310,22 +309,23 @@ d.addEventListener("click", () => {
 let pressTimer = null;
 let longPress = false;
 
-d.addEventListener("touchstart", e => {
+d.addEventListener("touchstart", () => {
   longPress = false;
   pressTimer = setTimeout(() => {
     longPress = true;
     this.toggleFlag(cell);   // ★ 長押しで旗
-  }, 500); // 0.5秒長押し
+  }, 250); // 0.5秒長押し
+  console.log("touchstart",longPress);
 });
-/*
-d.addEventListener("touchend", e => {
+// --- スマホ長押し解除 ---
+d.addEventListener("touchcancel", () => {
   clearTimeout(pressTimer);
-
+console.log("touchcancel",clearTimeout(pressTimer));
   // 長押しでなければ通常の開く処理
   if (!longPress) {
     this.openCell(cell);
   }
-});*/
+});
     // ★ 探索範囲の可視化
 // ハイライト
 d.addEventListener("mouseenter", () => {
@@ -776,10 +776,134 @@ colsInput.min = 1;
 colsInput.step = 1;
     console.log("地雷数ステップを1に設定");
   }
-
     // 地雷数の最大値を更新
 //console.log(`地雷数ステップを ${step} に設定 (ルール: ${rule})`);
 }
+
+// --- ユーティリティ ---
+function setInputValue(id, value, triggerChange = true) {
+  const el = document.getElementById(id);
+  if (!el) return false;
+  el.value = value;
+  if (triggerChange) el.dispatchEvent(new Event('input', { bubbles: true }));
+  if (triggerChange) el.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+}
+
+function setSelectValue(id, value, triggerChange = true) {
+  const sel = document.getElementById(id);
+  if (!sel) return false;
+  // 値が存在しない場合は追加する（安全策）
+  if (![...sel.options].some(o => o.value === value)) {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = value;
+    sel.appendChild(opt);
+  }
+  sel.value = value;
+  if (triggerChange) sel.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+}
+
+// フォーム送信をプログラムで実行（既存の submit ハンドラを呼ぶ）
+function submitSettings() {
+  const form = document.getElementById('settings');
+  if (!form) return;
+  form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+}
+
+// --- プリセット適用例 ---
+const presets = {
+  "small-easy": { rows: 6, cols: 6, mines: 6, placement: 'random', explore: 'normal8', hintRate: 10 },
+  "wide-hard":  { rows: 12, cols: 20, mines: 40, placement: 'cluster', explore: 'Normal8torus', hintRate: 0 },
+};
+
+function applyPreset(name) {
+  const p = presets[name];
+  if (!p) return false;
+  setInputValue('rows', p.rows);
+  setInputValue('cols', p.cols);
+  setInputValue('mines', p.mines);
+  setSelectValue('placement', p.placement);
+  setSelectValue('explore', p.explore);
+  setInputValue('hintRate', p.hintRate);
+  // hintRate の表示更新があるなら手動で更新
+  const hintLabel = document.getElementById('hintRateValue');
+  if (hintLabel) hintLabel.textContent = p.hintRate + '%';
+  return true;
+}
+
+// --- ルールをランダムに設定する例 ---
+function randomRule() {
+  const placements = [...document.getElementById('placement').options].map(o => o.value);
+  const explores = [...document.getElementById('explore').options].map(o => o.value);
+  const rand = arr => arr[Math.floor(Math.random() * arr.length)];
+  setInputValue('rows', 8 + Math.floor(Math.random() * 10));
+  setInputValue('cols', 8 + Math.floor(Math.random() * 10));
+  setInputValue('mines', 5 + Math.floor(Math.random() * 30));
+  setSelectValue('placement', rand(placements));
+  setSelectValue('explore', rand(explores));
+  const hr = Math.floor(Math.random() * 101);
+  setInputValue('hintRate', hr);
+  const hintLabel = document.getElementById('hintRateValue');
+  if (hintLabel) hintLabel.textContent = hr + '%';
+}
+
+// --- ラベル（DOM）を動的に作る例 ---
+// 既存の vh-block を JS で作成して挿入する
+function createVHBlock(parentSelector = '#settings') {
+  const parent = document.querySelector(parentSelector);
+  if (!parent) return null;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'vh-block';
+
+  const labelV = document.createElement('label');
+  labelV.innerHTML = '縦 <input id="rows_js" type="number" min="2" max="99" value="10">';
+  const labelH = document.createElement('label');
+  labelH.innerHTML = '横 <input id="cols_js" type="number" min="2" max="99" value="10">';
+  const labelM = document.createElement('label');
+  labelM.className = 'mines';
+  labelM.innerHTML = '地雷 <input id="mines_js" type="number" min="0" max="256" value="10">';
+
+  wrapper.appendChild(labelV);
+  wrapper.appendChild(labelH);
+  wrapper.appendChild(labelM);
+
+  parent.insertBefore(wrapper, parent.firstChild);
+  return wrapper;
+}
+
+
+
+// 画面右上にプリセットボタン群を追加
+function injectPresetButtons() {
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.gap = '8px';
+  container.style.marginBottom = '8px';
+
+  for (const key of Object.keys(presets)) {
+    const btn = document.createElement('button');
+    btn.textContent = key;
+    btn.type = 'button';
+    btn.addEventListener('click', () => {
+      applyPreset(key);
+    });
+    container.appendChild(btn);
+  }
+  const settings = document.getElementById('settings');
+  settings.insertBefore(container, settings.firstChild);
+}
+
+
+
+
+
+
+
+
+
 // ====== 画面サイズをボードサイズに合わせる ======
 const colorMap = {
   red:    [255, 0, 0],

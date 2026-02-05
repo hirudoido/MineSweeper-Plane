@@ -22,18 +22,107 @@ body {
 }
 
 .wrap {
-  max-width: 800px;
+  max-width: 1000px;
   margin: 20px auto;
   padding: 0 12px;
 }
 
+/* settings を 2 列グリッドに */
 .settings {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* 2列 */
   gap: 10px;
-  margin-bottom: 12px;
+  align-items: center;
 }
 
+/* 各ラベルを横並びにして見た目を整える */
+.settings label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+/* 縦横地雷をまとめるブロック */
+.vh-block {
+  grid-column: 1 / 3; /* settings の全幅を占有（3列レイアウトでもOK） */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* 2列 */
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 6px;
+}
+
+/* 各項目をラベル風に整える */
+.vh-block label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* 地雷ラベルを下段で2列分に広げたい場合 */
+.vh-block .mines {
+  padding: 8px 3px;
+}
+
+/* もし地雷を右側に寄せたいなら下記を代わりに使う */
+/*
+.vh-block .mines {
+  grid-column: 2 / 3; 
+  justify-self: end;
+}
+*/
+
+/* モバイルでは1列に戻す 
+@media (max-width: 720px) {
+  .vh-block { grid-template-columns: 1fr; }
+  .vh-block .mines { grid-column: auto; }
+}*/
+
+/* 大きな項目は全幅（2列分）にする */
+.settings label.full {
+  grid-column: 1 / -2; /* 先頭から最後まで（2列分） */
+}
+
+/* ボタン群などを右寄せにしたい場合の例 */
+.settings .actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.primary {
+  display: inline-block;
+  width: 340px;           /* 固定幅にするならここを調整 */
+  max-width: 100%;
+  padding: 6px 2px;
+  font-size: 1.1rem;
+  border-radius: 10px;
+grid-column: 1 / 3;
+  font-weight: 700;
+}
+.primary2 {
+  display: inline-block;
+  width: 170px;           /* 固定幅にするならここを調整 */
+  max-width: 100%;
+
+  border-radius: 10px;
+grid-column: 1 / 3;
+  font-weight: 700;
+}
+
+/* レスポンシブ：狭い画面では1列に 
+@media (max-width: 720px) {
+  .settings {
+    grid-template-columns: 1fr;
+  }
+}
+*/
 .board {
   display: grid;
   gap: 2px;
@@ -293,62 +382,59 @@ height: 140%;
     <!-- 設定パネル -->
 
     <form id="settings" class="settings">
-  <label>縦 <input id="rows" type="number" min="2" max="99" value="10"></label>
-  <label>横 <input id="cols" type="number" min="2" max="99" value="10"></label>
-  <label>地雷 <input id="mines" type="number" min="0" max="256" value="10"></label>
-      <label>配置
+      <label >配置
         <select id="placement">
               <optgroup label="基本設置">
-          <option value="random">ランダム</option>
-          <option value="ReducedLuck">運排除</option>
-          <option value="Chaos12">運のみ</option>
-          <option value="cluster">クラスター</option>
-          <option value="FractalIslands">フラクタル島</option>
-          <option value="noDiagonal">斜め禁止</option>
-          <option value="noOrthogonal">縦横禁止</option>
-          <option value="noThree">3連禁止</option>
-          <option value="Path">道</option>
-          <option value="NoIsolated">孤立禁止</option>
-          <option value="Continent">大陸</option>
-            <option value="Lightning">稲妻</option>
-            <option value="SpiderWeb">蜘蛛の巣</option>
-            </optgroup>
-          <optgroup label="制限設置">
-            <option value="pair">ペア</option>
-            <option value="rowcolfixed">行・列固定</option>
-            <option value="bridge">ブリッジ</option>
-            <option value="ThreeInRow">3連のみ</option>
-            <option value="QuadrantEqual">4分割</option>
-            <option value="ColorBalanced">色ごと</option>
-            <option value="NoTouch">ぼっち</option>
-            <option value="Cluster4Isolated">4近傍孤立</option>
-            <option value="TetrisMino">テトリスミノ</option>
-
-            </optgroup>
-        </select>
-      </label>
- <label>探索
-  <select id="explore">
-    <optgroup label="基本探索">
-    <option value="normal8">8方向(3*3)</option>
-    <option value="big25">8方向(5*5)</option>
-    <option value="big49">8方向(7*7)</option>
-    <option value="Normal8torus">8方向(3*3,トーラス)</option>
-    <option value="knight">ナイト</option>
-    <option value="queen">クイーン</option>
-    <option value="UntilMine5x5">クイーン(2)</option>
-    <option value="Cross1">十字架(1)</option>
-    <option value="Cross2">十字架(2)</option>
-    <option value="Alternating">十字架,8方向交互に</option>
-    <option value="colorAxis">縦横に交互に</option>
-    <option value="colorAxisDiagonal">縦横,斜めに交互に</option>
-    <option value="Ring">リング</option>
-    <option value="Diamond2">菱形(2)</option>
-    <option value="Diamond3">菱形(3)</option>
-    <option value="Global">全範囲</option>
-    </optgroup>
-    <optgroup label="特殊探索">
-      <option value="untilMine">クイーン状に発見まで</option>
+                <option value="random">ランダム</option>
+                <option value="ReducedLuck">運排除</option>
+                <option value="Chaos12">運のみ</option>
+                <option value="cluster">クラスター</option>
+                <option value="FractalIslands">フラクタル島</option>
+                <option value="noDiagonal">斜め禁止</option>
+                <option value="noOrthogonal">縦横禁止</option>
+                <option value="noThree">3連禁止</option>
+                <option value="Path">道</option>
+                <option value="NoIsolated">孤立禁止</option>
+                <option value="Continent">大陸</option>
+                <option value="Lightning">稲妻</option>
+                <option value="SpiderWeb">蜘蛛の巣</option>
+              </optgroup>
+              <optgroup label="制限設置">
+                <option value="pair">ペア</option>
+                <option value="rowcolfixed">行・列固定</option>
+                <option value="bridge">ブリッジ</option>
+                <option value="ThreeInRow">3連のみ</option>
+                <option value="QuadrantEqual">4分割</option>
+                <option value="ColorBalanced">色ごと</option>
+                <option value="NoTouch">ぼっち</option>
+                <option value="Cluster4Isolated">4近傍孤立</option>
+                <option value="TetrisMino">テトリスミノ</option>
+                
+              </optgroup>
+            </select>
+          </label>
+          <label >探索
+            <select id="explore">
+              <optgroup label="基本探索">
+                <option value="normal8">8方向(3*3)</option>
+                <option value="big25">8方向(5*5)</option>
+                <option value="big49">8方向(7*7)</option>
+                <option value="Normal8torus">8方向(3*3,トーラス)</option>
+                <option value="knight">ナイト</option>
+                <option value="queen">クイーン</option>
+                <option value="UntilMine5x5">クイーン(2)</option>
+                <option value="Cross1">十字架(1)</option>
+                <option value="Cross2">十字架(2)</option>
+                <option value="Alternating">十字架,8方向交互に</option>
+                <option value="colorAxis">縦横に交互に</option>
+                <option value="colorAxisDiagonal">縦横,斜めに交互に</option>
+                <option value="Ring">リング</option>
+                <option value="Diamond2">菱形(2)</option>
+                <option value="Diamond3">菱形(3)</option>
+                <option value="Global">全範囲</option>
+              </optgroup>
+              <optgroup label="特殊探索">
+                <option value="untilMine">クイーン状に発見まで</option>
       <option value="expandUntilMine">波紋状に発見まで</option>
       <option value="ExpandUntil2MinesTriangle">三角状に発見まで(2)</option>
       <option value="RippleChain">地雷から地雷に接続</option>
@@ -366,9 +452,9 @@ height: 140%;
   </select>
 </label>
 
-<label>表示
+<label >表示
   <select id="number">
-        <optgroup label="基本表示">
+    <optgroup label="基本表示">
     <option value="total">総数</option>
     <option value="qmark">クエスチョン</option>
     <option value="fuzzy">ファジー</option>
@@ -385,9 +471,9 @@ height: 140%;
     <option value="distanceSum">距離の合計</option>
     <option value="distanceProduct">距離の積</option>
     <option value="NearestTwoProduct">2点からの距離</option>
-       <option value="NeighborAverage">周りの平均値</option>
-    </optgroup>
-    <optgroup label="数多の表示">
+    <option value="NeighborAverage">周りの平均値</option>
+  </optgroup>
+  <optgroup label="数多の表示">
     <option value="colorSplit">色別</option>
     <option value="cluster">固まり</option>
     <option value="clusterMazMin">固まり最大 最小</option>
@@ -396,11 +482,27 @@ height: 140%;
     <option value="TruthLie">真偽</option>
     <option value="VerticalSplit">上下</option>
     <option value="HorizontalSplit">左右</option>
-   <option value="ManhattanVector">縦横の距離</option>
- 
-    </optgroup>
-  </select>
-  <label>ヒント率
+    <option value="ManhattanVector">縦横の距離</option>
+    
+  </optgroup>
+</select>
+</label>
+
+<!-- 縦・横・地雷 をまとめて 2 列にするブロック -->
+<div class="vh-block">
+  <label class="vlabel">縦
+    <input id="rows" type="number" min="2" max="99" value="10">
+  </label>
+
+  <label class="hlabel">横
+    <input id="cols" type="number" min="2" max="99" value="10">
+  </label>
+  <!-- 地雷は下段で2列分に広げる例 -->
+  <label class="mines">地雷
+    <input id="mines" type="number" min="0" max="256" value="10">
+  </label>
+</div>
+<label>ヒント率
   <input id="hintRate" type="range" min="0" max="100" value="0">
   <span id="hintRateValue">0%</span>
 </label>
@@ -408,15 +510,34 @@ height: 140%;
   document.getElementById("hintRate").addEventListener("input", e => {
     document.getElementById("hintRateValue").textContent = e.target.value + "%";
   });
-
+  
 </script>
-</label>
-      <button type="submit">開始</button>
-        <button type="button" id="startRandom">ランダムシードで開始</button>
-        <button type="button" id="startRandomRule">ルールもランダムで開始</button>
-        
+<!-- ボタン群を右寄せにしたい場合 -->
+<div class="full actions">
+  <button type="submit" class="primary">開始</button>
+</div>
+<div class="full actions">
+  <button type="button" id="startRandom"class="primary2">ランダムシードで開始</button>
+  <button type="button" id="startRandomRule"class="primary2">ルールもランダムで開始</button>
+</div>
+  <div class="full actions">
+  <label >並び替え
+    <select id="rule">
+      <option>標準</option>
+      <option>ジャンル</option>
+      <option>難易度</option>
+       </select>
+    </label>  
+ <label >セット
+    <select id="rule">
+      <option>1</option>
+       <option>2</option>
+       </select>
+    </label>  
+</div>
+</form>
 
-    </form>
+
 
 <!-- HUD に時間とチート切り替えを追加 -->
 <div class="hud">
