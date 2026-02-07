@@ -521,19 +521,21 @@ height: 140%;
   <button type="button" id="startRandomRule"class="primary2">ルールもランダムで開始</button>
 </div>
   <div class="full actions">
-  <label >並び替え
-    <select id="rule">
-      <option>標準</option>
-      <option>ジャンル</option>
-      <option>難易度</option>
-       </select>
-    </label>  
- <label >セット
-    <select id="rule">
-      <option>1</option>
-       <option>2</option>
-       </select>
-    </label>  
+<label>並び替え
+  <select id="ruleSort">
+    <option value="standard">標準</option>
+    <option value="genre">ジャンル</option>
+    <option value="difficulty">難易度</option>
+  </select>
+</label>
+
+<label>セット
+  <select id="ruleSet">
+    <option>1</option>
+    <option>2</option>
+  </select>
+</label>
+
 </div>
 </form>
 
@@ -617,6 +619,7 @@ height: 140%;
   <!-- エラーメッセージ -->
   <div id="errorMsg" class="hidden error">地雷配置に失敗しました。設定を見直してください。</div>
 </div>
+  <script src="UI.js"></script>
   <script src="main2.js"></script>
   <script src="naive.js"></script>
 </body>
