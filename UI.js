@@ -1,3 +1,66 @@
+const placementGroups = {
+   basic: {
+    label: "基本設置",
+    items: [
+      "random","ReducedLuck","Chaos12","cluster","FractalIslands",
+      "noDiagonal","noOrthogonal","noThree","Path","NoIsolated","Continent",
+      "Lightning","SpiderWeb"
+    ]
+  },
+  limit: {
+    label: "制限設置",
+    items: [
+      "pair","rowcolfixed","bridge","ThreeInRow","QuadrantEqual","ColorBalanced",
+      "NoTouch","Cluster4Isolated","TetrisMino"
+    ]
+  },
+  Prohibited: {
+    label: "禁止設置",
+    items: [
+      "ReducedLuck","noDiagonal","noOrthogonal","noThree","NoIsolated"
+    ]
+  },
+  lump: {
+    label: "固まり設置",
+    items: [
+     "Path","Chaos12","cluster","FractalIslands","NoIsolated","Continent","Lightning","SpiderWeb","Cluster4Isolated"
+     ,"TetrisMino"
+    ]
+  },
+  Equal: {
+    label: "等分設置",
+    items: [
+"pair","rowcolfixed","bridge","QuadrantEqual","ColorBalanced","ThreeInRow"
+    ]
+  },
+  unique: {
+    label: "一意設置",
+    items: [
+      "NoTouch","random"
+    ]
+  },
+  Beginner: {
+    label: "初心者向け",
+    items: [
+      "NoTouch","random","ReducedLuck","noThree","QuadrantEqual","ColorBalanced"
+    ]
+  },
+  Intermediate: {
+    label: "中級者向け",
+    items: [
+      "Chaos12","noDiagonal","noOrthogonal","NoIsolated","Continent","pair","rowcolfixed","ThreeInRow",
+      "TetrisMino"
+    ]
+  },
+  Advanced: {
+    label: "上級者向け",
+    items: [
+      "cluster","FractalIslands","Path","Lightning","SpiderWeb","bridge","Cluster4Isolated"
+    ]
+  }
+
+
+}
 const exploreGroups = {
   basic: {
     label: "基本探索",
@@ -21,7 +84,54 @@ const exploreGroups = {
     items: [
       "clusterDetect","StraightLine","RippleImmutable","UntilMine5x5Immutable"
     ]
+  },
+  square: {
+    label: "正方形探索",
+    items: [
+      "normal8","big25","big49","Normal8torus",
+      ,"RippleChain","SquareMineCount","Alternating"
+    ]
+  },
+  rectangle:{
+    label: "長方形探索",
+    items: [
+      "Cross1","Cross2","colorAxis","colorAxisDiagonal","StraightLine","Alternating"
+    ]
+  },
+  chess: {
+    label: "チェス探索",
+    items: [
+      "knight","queen","UntilMine5x5","untilMine","UntilMine5x5Immutable"
+    ]
+  },
+  eccentric: {
+    label: "異形探索",
+    items: [
+      "Ring","Diamond2","Diamond3","DiamondMineCount","expandUntilMine","ExpandUntil2MinesTriangle","Ripple"
+      ,"RippleImmutable","clusterDetect",
+    ]
+  },
+  Beginner: {
+    label: "初心者向け",
+    items: [
+    "Cross1","Cross2","normal8","UntilMine5x5","untilMine"
+    ]
+  },
+  Intermediate: {
+    label: "中級者向け",
+    items: [
+    "big25","Normal8torus","Alternating","knight","queen","Ring","Diamond2","expandUntilMine",
+    "Ripple","SquareMineCount","UntilMine5x5Immutable"
+    ]
+  },
+  Advanced: {
+    label: "上級者向け",
+    items: [
+      "big49","colorAxis","colorAxisDiagonal","Diamond3","ExpandUntil2MinesTriangle","RippleChain",
+      "DiamondMineCount","StraightLine","clusterDetect","RippleImmutable","Global"
+    ]
   }
+
 };
 const numberGroups = {
   basic: {
@@ -38,8 +148,85 @@ const numberGroups = {
       "colorSplit","cluster","clusterMazMin","range3","decompose",
       "TruthLie","VerticalSplit","HorizontalSplit","ManhattanVector"
     ]
+  },
+  mathematics: {
+    label: "数学の表示",
+    items: [
+      "total","mod3","mod10","Percent","EvenOdd","Odd",
+      "prime","PrimeOnly","NeighborAverage","decompose"
+    ]
+  },
+  distance: {
+    label: "距離の表示",
+    items: [
+      "distanceSum","distanceProduct","NearestTwoProduct","ManhattanVector"
+    ]
+  },
+  colors: {
+    label: "色の表示",
+    items: [
+      "colorSplit","colorDiff","ColorWeight"
+    ]
+  },
+  lumps: {
+    label: "固まりの表示",
+    items: [
+      "cluster","clusterMazMin","ClusterQuantity"
+    ]
+  },
+  unique: {
+    label: "個性的な表示",
+    items: [
+      "qmark","fuzzy","range3","TruthLie","VerticalSplit","HorizontalSplit"
+    ]
+  },
+  Beginner: {
+    label: "初心者向け",
+    items: [
+      "colorSplit","cluster","total","VerticalSplit","HorizontalSplit"
+    ]
+  },
+  Intermediate: {
+    label: "中級者向け",
+    items: [
+      "fuzzy","ColorWeight","ClusterQuantity","mod10","EvenOdd","Odd","prime","PrimeOnly",
+      "distanceProduct","NearestTwoProduct","clusterMazMin","decompose","TruthLie"
+    ]
+  },
+  Advanced: {
+    label: "上級者向け",
+    items: [
+      "qmark","colorDiff","mod3","Percent","distanceSum","NeighborAverage","range3","ManhattanVector"
+    ]
   }
+
 };
+const placementJP = {
+  //"基本設置"
+  random:"ランダム",
+  ReducedLuck:"運排除",
+  Chaos12:"運のみ",
+  cluster:"クラスター",
+  FractalIslands:"フラクタル島",
+  noDiagonal:"斜め禁止",
+  noOrthogonal:"縦横禁止",
+  noThree:"3連禁止",
+  Path:"道",
+  NoIsolated:"孤立禁止",
+  Continent:"大陸",
+  Lightning:"稲妻",
+  SpiderWeb:"蜘蛛の巣",
+//"制限設置
+  pair:"ペア",
+  rowcolfixed:"行・列固定",
+  bridge:"ブリッジ",
+  ThreeInRow:"3連のみ",
+  QuadrantEqual:"4分割",
+  ColorBalanced:"色ごと",
+  NoTouch:"ぼっち",
+  Cluster4Isolated:"4近傍孤立",
+  TetrisMino:"テトリスミノ",
+}
 const exploreJP = {
   normal8: "8方向(3×3)",
   big25: "8方向(5×5)",
@@ -68,10 +255,10 @@ const exploreJP = {
   DiamondMineCount: "地雷数による菱形(+2)",
 
   // 不変探索
-  clusterDetect: "固まり検出",
-  StraightLine: "直線状に発見まで",
+  clusterDetect: "固まり検出α",
+  StraightLine: "直線状に発見までα",
   RippleImmutable: "地雷数による波紋α",
-  UntilMine5x5Immutable: "クイーン状に発見まで(2)"
+  UntilMine5x5Immutable: "クイーン状に発見までα(2)"
 };
 // 表示ルール分類
 const numberJP = {
@@ -104,17 +291,22 @@ const numberJP = {
   HorizontalSplit: "左右",
   ManhattanVector: "縦横の距離"
 };
+const placementOrder = {
+    standard: ["basic", "limit"],
+  genre:     ["Prohibited", "lump","Equal","unique"], // ジャンル順
+  difficulty:  ["Beginner", "Intermediate", "Advanced"]
+}
 // 並び替えプリセット（optgroup の順番）
 const exploreOrder = {
   standard: ["basic", "special", "immutable"],
-  genre:    ["basic", "special", "immutable"], // ジャンル順
-  difficulty: ["basic", "immutable", "special"] // 難易度順（例）
+  genre:    ["square", "rectangle", "chess","eccentric"], // ジャンル順
+  difficulty:["Beginner", "Intermediate", "Advanced"]// 難易度順（例）
 };
 
 const numberOrder = {
   standard: ["basic", "multi"],
-  genre:    ["multi","basic" ],
-  difficulty: ["basic", "multi"] // 必要なら変更
+  genre:    ["mathematics", "distance", "colors","lumps","unique"],
+  difficulty:  ["Beginner", "Intermediate", "Advanced"]// 必要なら変更
 };
 function rebuildSelect(selectId, groups, order, dictJP) {
   const sel = document.getElementById(selectId);
@@ -142,6 +334,7 @@ function rebuildSelect(selectId, groups, order, dictJP) {
 document.getElementById("ruleSort").addEventListener("change", e => {
   const mode = e.target.value;
 
+  rebuildSelect("placement", placementGroups, placementOrder[mode], placementJP);
   rebuildSelect("explore", exploreGroups, exploreOrder[mode], exploreJP);
   rebuildSelect("number", numberGroups, numberOrder[mode], numberJP);
 });
@@ -207,31 +400,36 @@ const drawManager = {
   },
 
 onTouchStart(e) {
-   if (e.touches.length >= 2) {
+  /*
+  if (e.touches.length >= 2) {
     // ★ キャンバスを一時的に無効化してスクロールを許可
     this.canvas.style.pointerEvents = "none";
     this.drawing = false;
     console.log("2本指以上",e.touches.length);
-    return;
-  }
-
-
-
-  // ★ モード判定をタッチ側でも行う
-  if (!["pen", "eraser", "colorEraser"].includes(this.mode)) {
-    this.drawing = false;
-    return;
-  }
-
-  const touch = e.touches[0];
-  const { x, y } = this.getPos(touch);
-  this.canvas.style.pointerEvents = "auto";
-
-  this.drawing = true;
-  this.ctx.beginPath();
+    //return;
+    }*/
+   
+   
+   
+   // ★ モード判定をタッチ側でも行う
+   if (!["pen", "eraser", "colorEraser"].includes(this.mode)) {
+     // this.drawing = false;
+    // return;
+    }
+    
+    const touch = e.touches[0];
+    const { x, y } = this.getPos(touch);
+    this.canvas.style.pointerEvents = "auto";
+    
+    this.drawing = true;
+    this.ctx.beginPath();
   this.ctx.moveTo(x, y);
  if (e.touches.length = 1) {
   console.log("1本指",e.touches.length);
+  //e.preventDefault();
+  }else{
+this.drawing = false;
+this.canvas.style.pointerEvents = "none";
   //e.preventDefault();
   }
 
@@ -240,23 +438,25 @@ onTouchStart(e) {
 
 
 onTouchMove(e) {
+
+  
   // 2本指 → スクロール・ズーム
   if (e.touches.length >= 2) {
     this.drawing = false;
-    console.log("2本指",e.touches.length);
-    return; // preventDefault しない
+    //console.log("2本指",e.touches.length);
+    //return;
+    // preventDefault しない
   }
-
   // 描画中のみ描く
   if (!this.drawing){ console.log("描画中",e.touches.length);return;}
-
+  
   const touch = e.touches[0];
   const { x, y } = this.getPos(touch);
 
   // ★ 色消しゴム（特定色だけ消す）
   if (this.mode === "colorEraser") {
     this.eraseColorAt(x, y);
-    //e.preventDefault();
+      if (e.touches.length = 1) {e.preventDefault();}
     return;
   }
 
@@ -267,7 +467,7 @@ onTouchMove(e) {
     this.ctx.globalCompositeOperation = "destination-out";
     this.ctx.lineTo(x, y);
     this.ctx.stroke();
-    e.preventDefault();
+    if (e.touches.length = 1) {e.preventDefault();}
     return;
   }
 

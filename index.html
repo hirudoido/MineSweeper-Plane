@@ -243,6 +243,7 @@ height: 6px;
   border-radius: 12px;
   text-align: center;
   box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+  z-index: 11;
 }
 .card .title {
   font-size: 1.5em;
@@ -344,7 +345,7 @@ height: 140%;
   background: #505667;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 10;
 }
 
 .tool-btn img {
@@ -416,10 +417,10 @@ height: 140%;
           <label >探索
             <select id="explore">
               <optgroup label="基本探索">
-                <option value="normal8">8方向(3*3)</option>
-                <option value="big25">8方向(5*5)</option>
-                <option value="big49">8方向(7*7)</option>
-                <option value="Normal8torus">8方向(3*3,トーラス)</option>
+                <option value="normal8">8方向(3×3)</option>
+                <option value="big25">8方向(5×5)</option>
+                <option value="big49">8方向(7×7)</option>
+                <option value="Normal8torus">8方向(3×3,トーラス)</option>
                 <option value="knight">ナイト</option>
                 <option value="queen">クイーン</option>
                 <option value="UntilMine5x5">クイーン(2)</option>
@@ -443,10 +444,10 @@ height: 140%;
       <option value="DiamondMineCount">地雷数による菱形(+2)</option>
     </optgroup>
     <optgroup label="不変探索">
-      <option value="clusterDetect">固まり検出</option>
-      <option value="StraightLine">直線状に発見まで</option>
+      <option value="clusterDetect">固まり検出α</option>
+      <option value="StraightLine">直線状に発見までα</option>
       <option value="RippleImmutable">地雷数による波紋α</option>
-      <option value="UntilMine5x5Immutable">クイーン状に発見まで(2)</option>
+      <option value="UntilMine5x5Immutable">クイーン状に発見までα(2)</option>
       
     </optgroup>
   </select>

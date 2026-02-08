@@ -652,7 +652,9 @@ document.getElementById("startRandom").addEventListener("click", () => {
 document.getElementById("startRandomRule").addEventListener("click", () => {
   // 配置ルールをランダム選択
   const placementKeys = Object.keys(placementMap);
+
   const randomPlacement = placementKeys[Math.floor(Math.random() * placementKeys.length)];
+
   document.getElementById("placement").value = randomPlacement;
 
   // 探索ルールをランダム選択
