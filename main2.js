@@ -310,22 +310,28 @@ let pressTimer = null;
 let longPress = false;
 
 d.addEventListener("touchstart", () => {
+   document.getElementById("Msg").textContent = "タッチ";
+   document.getElementById("Msg").classList.remove("hidden");
   longPress = false;
   pressTimer = setTimeout(() => {
+    document.getElementById("Msg").textContent = "長押しタッチ";
     longPress = true;
     this.toggleFlag(cell);   // ★ 長押しで旗
-  }, 400); // 0.5秒長押し
+  }, 500); // 0.5秒長押し
   console.log("touchstart",longPress);
 });
-/* --- スマホ長押し解除 ---
+
+// --- スマホ長押し解除 ---
 d.addEventListener("touchcancel", () => {
   clearTimeout(pressTimer);
 console.log("touchcancel",clearTimeout(pressTimer));
+ document.getElementById("Msg").classList.add("hidden");
   // 長押しでなければ通常の開く処理
   if (!longPress) {
+    
     this.openCell(cell);
   }
-});*/
+});
     // ★ 探索範囲の可視化
 // ハイライト
 d.addEventListener("mouseenter", () => {
