@@ -317,7 +317,7 @@ d.addEventListener("touchstart", () => {
   }, 400); // 0.5秒長押し
   console.log("touchstart",longPress);
 });
-// --- スマホ長押し解除 ---
+/* --- スマホ長押し解除 ---
 d.addEventListener("touchcancel", () => {
   clearTimeout(pressTimer);
 console.log("touchcancel",clearTimeout(pressTimer));
@@ -325,7 +325,7 @@ console.log("touchcancel",clearTimeout(pressTimer));
   if (!longPress) {
     this.openCell(cell);
   }
-});
+});*/
     // ★ 探索範囲の可視化
 // ハイライト
 d.addEventListener("mouseenter", () => {
