@@ -310,11 +310,11 @@ let pressTimer = null;
 let longPress = false;
 
 d.addEventListener("touchstart", () => {
-   document.getElementById("Msg").textContent = "タッチ";
-   document.getElementById("Msg").classList.remove("hidden");
+  // document.getElementById("Msg").textContent = "タッチ";
+  // document.getElementById("Msg").classList.remove("hidden");
   longPress = false;
   pressTimer = setTimeout(() => {
-    document.getElementById("Msg").textContent = "長押しタッチ";
+   // document.getElementById("Msg").textContent = "長押しタッチ";
     longPress = true;
     this.toggleFlag(cell);   // ★ 長押しで旗
   }, 500); // 0.5秒長押し
@@ -325,7 +325,7 @@ d.addEventListener("touchstart", () => {
 d.addEventListener("touchcancel", () => {
   clearTimeout(pressTimer);
 console.log("touchcancel",clearTimeout(pressTimer));
- document.getElementById("Msg").classList.add("hidden");
+ //document.getElementById("Msg").classList.add("hidden");
   // 長押しでなければ通常の開く処理
   if (!longPress) {
     
@@ -668,6 +668,7 @@ document.getElementById("startRandomRule").addEventListener("click", () => {
 ;
   const randomExplore = exploreKeys[Math.floor(Math.random() * exploreKeys.length)];
   document.getElementById("explore").value = randomExplore;
+
 
   // 表示ルールをランダム選択
   const numberKeys = Object.keys(numberMap);
