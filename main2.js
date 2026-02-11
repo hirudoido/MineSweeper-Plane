@@ -443,6 +443,16 @@ if (cell.open) {
     const rendered = this.number.render ? this.number.render(cell) : cell.value;
     d.innerHTML = rendered;
 
+    // --- safe-zone 色変更 ---
+    if (cell.safeZone) {
+   //   d.style.backgroundColor = "#b51e1e";   // ← 安全地帯の色
+      d.style.color = "#fbff00";
+    } else {
+      d.style.color = "";         // ← 通常色に戻す
+    }
+
+
+
 // 除外ルール
 const skip = ["cluster", "VerticalSplit", "HorizontalSplit","ManhattanVector"];
 

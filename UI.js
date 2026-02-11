@@ -139,7 +139,8 @@ const numberGroups = {
     items: [
       "total","qmark","fuzzy","colorDiff","ColorWeight","ClusterQuantity",
       "mod3","mod10","Percent","EvenOdd","Odd","prime","PrimeOnly",
-      "distanceSum","distanceProduct","NearestTwoProduct","NeighborAverage"
+      "distanceSum","distanceProduct","NearestTwoProduct","NeighborAverage",
+      "Median"
     ]
   },
   multi: {
@@ -153,13 +154,19 @@ const numberGroups = {
     label: "数学の表示",
     items: [
       "total","mod3","mod10","Percent","EvenOdd","Odd",
-      "prime","PrimeOnly","NeighborAverage","decompose"
+      "prime","PrimeOnly","decompose",
     ]
   },
   distance: {
     label: "距離の表示",
     items: [
       "distanceSum","distanceProduct","NearestTwoProduct","ManhattanVector"
+    ]
+  },
+  statistics: {
+    label: "統計の表示",
+    items: [
+      "NeighborAverage","Median"
     ]
   },
   colors: {
@@ -196,7 +203,7 @@ const numberGroups = {
   Advanced: {
     label: "上級者向け",
     items: [
-      "qmark","colorDiff","mod3","Percent","distanceSum","NeighborAverage","range3","ManhattanVector"
+      "qmark","colorDiff","mod3","Percent","distanceSum","NeighborAverage","range3","ManhattanVector","Median"
     ]
   }
 
@@ -279,6 +286,7 @@ const numberJP = {
   distanceProduct: "距離の積",
   NearestTwoProduct: "2点からの距離",
   NeighborAverage: "周りの平均値",
+  Median:"周りの中央値",
 
   // 数多
   colorSplit: "色別",
@@ -305,7 +313,7 @@ const exploreOrder = {
 
 const numberOrder = {
   standard: ["basic", "multi"],
-  genre:    ["mathematics", "distance", "colors","lumps","unique"],
+  genre:    ["mathematics", "distance", "statistics","colors","lumps","unique"],
   difficulty:  ["Beginner", "Intermediate", "Advanced"]// 必要なら変更
 };
 function rebuildSelect(selectId, groups, order, dictJP) {

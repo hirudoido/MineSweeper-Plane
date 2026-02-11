@@ -1507,14 +1507,12 @@ class FractalIslandsPlacement extends PlacementStrategy {
 class Chaos12Placement extends PlacementStrategy {
 
   place(board, mineCount, rng, excludeIndex = -1) {
-    // 全セル初期化
     for (const c of board.cells) c.mine = false;
 
     const total = board.rows * board.cols;
-
-    // --- ① まず「1」「2」を大量生成する ---
-    // 1: 孤立地雷をランダムに配置
     let placed = 0;
+
+    // --- ① 孤立地雷 ---
     while (placed < mineCount * 0.5) {
       const idx = Math.floor(rng() * total);
       if (idx === excludeIndex) continue;
@@ -1525,47 +1523,54 @@ class Chaos12Placement extends PlacementStrategy {
       }
     }
 
-    // 2: ペア地雷（2 を作る）
+    // --- ② ペア地雷 ---
     while (placed < mineCount * 0.8) {
       const idx = Math.floor(rng() * total);
       if (idx === excludeIndex) continue;
-      const cell = board.cells[idx];
-      if (cell.mine) continue;
 
+      const cell = board.cells[idx];
       const r = cell.r, c = cell.c;
+
       const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];
       const [dr, dc] = dirs[Math.floor(rng() * dirs.length)];
       const rr = r + dr, cc = c + dc;
 
       if (rr>=0 && rr<board.rows && cc>=0 && cc<board.cols) {
         const nb = board.getCell(rr, cc);
-        if (!nb.mine) {
-          cell.mine = true;
-          nb.mine = true;
-          placed += 2;
-        }
+
+        let added = 0;
+        if (!cell.mine) { cell.mine = true; added++; }
+        if (!nb.mine)   { nb.mine = true;   added++; }
+
+        placed += added;
+        if (placed >= mineCount) return;
       }
     }
 
-    // --- ② 残りは「1」「2」以外の数字を作るためのクラスター ---
+    // --- ③ クラスター（必要数だけ置く） ---
     while (placed < mineCount) {
       const idx = Math.floor(rng() * total);
       if (idx === excludeIndex) continue;
-      const cell = board.cells[idx];
-      if (cell.mine) continue;
 
-      // 2×2 固まり（3,4,5 などを作る）
+      const cell = board.cells[idx];
       const r = cell.r, c = cell.c;
+
       if (r < board.rows - 1 && c < board.cols - 1) {
         const a = board.getCell(r, c);
         const b = board.getCell(r, c+1);
         const d = board.getCell(r+1, c);
         const e = board.getCell(r+1, c+1);
 
-        if (!a.mine && !b.mine && !d.mine && !e.mine) {
-          a.mine = b.mine = d.mine = e.mine = true;
-          placed += 4;
-        }
+        let need = mineCount - placed;
+        let added = 0;
+
+        if (!a.mine && added < need) { a.mine = true; added++; }
+        if (!b.mine && added < need) { b.mine = true; added++; }
+        if (!d.mine && added < need) { d.mine = true; added++; }
+        if (!e.mine && added < need) { e.mine = true; added++; }
+
+        placed += added;
+        if (placed >= mineCount) return;
       }
     }
   }
@@ -2826,28 +2831,30 @@ class TruthLieNumberRule extends NumberRule {
 // 隣接セルの平均値
 class NeighborAverageNumberRule extends NumberRule {
   calculate(cell, neighbors) {
-    // 通常の真値を計算して保持
+    // 通常の真値
     cell.trueValue = neighbors.filter(nb => nb.mine).length;
 
-    if (cell.trueValue === 0) {
-      cell.displayValue = "";
-      return cell.trueValue;
-    }
-
-    // 隣接セルを探索ルールに従って取得
+    // 探索ルールに従って取得
     const ns = currentGame.explore.neighbors(cell.board, cell.r, cell.c);
 
-    // 隣接セルの trueValue または地雷を1として扱う
+    // ★ 地雷が一つもないかどうか
+    const hasMine = ns.some(nb => nb.mine);
+
+    // ★ safeZone フラグをセット
+    cell.safeZone = !hasMine;
+
+    // 地雷→1、数字→trueValue、0は除外
     const valid = ns
       .map(nb => nb.mine ? 1 : nb.trueValue)
       .filter(v => v !== undefined && v > 0);
 
+    // 平均値が無い → 空白
     if (valid.length === 0) {
       cell.displayValue = "";
     } else {
       const sum = valid.reduce((a, v) => a + v, 0);
       const avg = sum / valid.length;
-      cell.displayValue = avg.toFixed(1);
+      cell.displayValue = avg === 0 ? "" : avg.toFixed(1);
     }
 
     return cell.trueValue;
@@ -2857,7 +2864,6 @@ class NeighborAverageNumberRule extends NumberRule {
     return cell.displayValue ?? "";
   }
 }
-
 
 // 起点から最も近い地雷と、次に近い地雷の距離の積（探索範囲に従う）
 class NearestTwoProductNumberRule extends NumberRule {
@@ -3256,6 +3262,53 @@ class ClusterQuantityNumberRule extends NumberRule {
     return !cell.value;
   }
 }
+// 隣接中央値ルール
+class MedianNumberRule extends NumberRule {
+  calculate(cell, neighbors) {
+    // 通常の真値（内部用）
+    cell.trueValue = neighbors.filter(nb => nb.mine).length;
+
+    // 探索ルールに従って取得
+    const ns = currentGame.explore.neighbors(cell.board, cell.r, cell.c);
+
+    // ★ 地雷が一つもないかどうか
+    const hasMine = ns.some(nb => nb.mine);
+    cell.safeZone = !hasMine;
+
+    // 地雷 → 1、数字 → trueValue、0 は除外
+    const valid = ns
+      .map(nb => nb.mine ? 1 : nb.trueValue)
+      .filter(v => v !== undefined && v > 0);
+
+    // ★ valid が空 → 表示なし
+    if (valid.length === 0) {
+      cell.displayValue = "";
+      return cell.trueValue;
+    }
+
+    // ★ 中央値を計算
+    valid.sort((a, b) => a - b);
+    let median;
+
+    if (valid.length % 2 === 1) {
+      // 奇数個 → 真ん中
+      median = valid[(valid.length - 1) / 2];
+    } else {
+      // 偶数個 → 2つの平均
+      const mid = valid.length / 2;
+      median = (valid[mid - 1] + valid[mid]) / 2;
+    }
+
+    // 小数点1桁で表示
+    cell.displayValue = median.toFixed(1);
+
+    return cell.trueValue;
+  }
+
+  render(cell) {
+    return cell.displayValue ?? "";
+  }
+}
 // ====== ★ここでマップを定義 ======
 const placementMap = {
   random: RandomPlacement,
@@ -3342,7 +3395,8 @@ const numberMap = {
 ManhattanVector: ManhattanVectorRule,
 VerticalSplit: VerticalSplitCountRule,
 HorizontalSplit: HorizontalSplitCountRule,
-ClusterQuantity:ClusterQuantityNumberRule
+ClusterQuantity:ClusterQuantityNumberRule,
+Median:MedianNumberRule
 };
 
 
