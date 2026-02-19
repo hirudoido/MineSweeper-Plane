@@ -45,6 +45,11 @@ console.log(Math.round(mines /4) * 4);
 
   return (Math.abs(rowMultiple - mines) < Math.abs(colMultiple - mines))
     ? rowMultiple : colMultiple}
+    // ★ シグマ固まりルール：地雷数を三角数に丸める
+if (placementKey === "SigmaCluster"||placementKey === "SigmaLine") {
+  let k = Math.floor((Math.sqrt(8 * mines + 1) - 1) / 2);
+  return k * (k + 1) / 2; // 下側の三角数
+}
   // --- 面積ベースの上限処理 ---
   const area = rows * cols;
   let maxMines;
@@ -185,7 +190,7 @@ async init() {
   const rng = makeRngFromSeed(seed);
 
   let success = false;
-  for (let attempt = 0; attempt < 6000 && !success; attempt++) {
+  for (let attempt = 0; attempt < 3000 && !success; attempt++) {
     const counter = document.getElementById("attemptCounter");
     if (counter) counter.textContent = `試行中: ${attempt + 1}回`;
 

@@ -385,111 +385,114 @@ height: 140%;
     <form id="settings" class="settings">
       <label >配置
         <select id="placement">
-              <optgroup label="基本設置">
-                <option value="random">ランダム</option>
-                <option value="ReducedLuck">運排除</option>
-                <option value="Chaos12">運のみ</option>
-                <option value="cluster">クラスター</option>
-                <option value="FractalIslands">フラクタル島</option>
-                <option value="noDiagonal">斜め禁止</option>
-                <option value="noOrthogonal">縦横禁止</option>
-                <option value="noThree">3連禁止</option>
-                <option value="Path">道</option>
-                <option value="NoIsolated">孤立禁止</option>
-                <option value="Continent">大陸</option>
-                <option value="Lightning">稲妻</option>
-                <option value="SpiderWeb">蜘蛛の巣</option>
-              </optgroup>
-              <optgroup label="制限設置">
-                <option value="pair">ペア</option>
-                <option value="rowcolfixed">行・列固定</option>
-                <option value="bridge">ブリッジ</option>
-                <option value="ThreeInRow">3連のみ</option>
-                <option value="QuadrantEqual">4分割</option>
-                <option value="ColorBalanced">色ごと</option>
-                <option value="NoTouch">ぼっち</option>
-                <option value="Cluster4Isolated">4近傍孤立</option>
-                <option value="TetrisMino">テトリスミノ</option>
+          <optgroup label="基本設置">
+            <option value="random">ランダム</option>
+            <option value="ReducedLuck">運排除</option>
+            <option value="Chaos12">運のみ</option>
+            <option value="cluster">クラスター</option>
+            <option value="FractalIslands">フラクタル島</option>
+            <option value="noDiagonal">斜め禁止</option>
+            <option value="noOrthogonal">縦横禁止</option>
+            <option value="noThree">3連禁止</option>
+            <option value="Path">道</option>
+            <option value="NoIsolated">孤立禁止</option>
+            <option value="Continent">大陸</option>
+            <option value="Lightning">稲妻</option>
+            <option value="SpiderWeb">蜘蛛の巣</option>
+          </optgroup>
+          <optgroup label="制限設置">
+            <option value="pair">ペア</option>
+            <option value="rowcolfixed">行・列固定</option>
+            <option value="bridge">ブリッジ</option>
+            <option value="ThreeInRow">3連のみ</option>
+            <option value="QuadrantEqual">4分割</option>
+            <option value="ColorBalanced">色ごと</option>
+            <option value="NoTouch">ぼっち</option>
+            <option value="Cluster4Isolated">4近傍孤立</option>
+            <option value="TetrisMino">テトリスミノ</option>
+            <option value="SigmaCluster">シグマ固まり</option>
+            <option value="SigmaLine">シグマ直線</option>
+
+          </optgroup>
+        </select>
+      </label>
+      <label >探索
+        <select id="explore">
+          <optgroup label="基本探索">
+            <option value="normal8">8方向(3×3)</option>
+            <option value="big25">8方向(5×5)</option>
+            <option value="big49">8方向(7×7)</option>
+            <option value="Normal8torus">8方向(3×3,トーラス)</option>
+            <option value="knight">ナイト</option>
+            <option value="queen">クイーン</option>
+            <option value="UntilMine5x5">クイーン(2)</option>
+            <option value="Cross1">十字架(1)</option>
+            <option value="Cross2">十字架(2)</option>
+            <option value="Alternating">十字架,8方向交互に</option>
+            <option value="colorAxis">縦横に交互に</option>
+            <option value="colorAxisDiagonal">縦横,斜めに交互に</option>
+            <option value="Ring">リング</option>
+            <option value="Diamond2">菱形(2)</option>
+            <option value="Diamond3">菱形(3)</option>
+            <option value="Global">全範囲</option>
+          </optgroup>
+          <optgroup label="特殊探索">
+            <option value="untilMine">クイーン状に発見まで</option>
+            <option value="expandUntilMine">波紋状に発見まで</option>
+            <option value="ExpandUntil2MinesTriangle">三角状に発見まで(2)</option>
+            <option value="RippleChain">地雷から地雷に接続</option>
+            <option value="Ripple">地雷数による波紋</option>
+            <option value="SquareMineCount">地雷数による正方形(2)</option>
+            <option value="DiamondMineCount">地雷数による菱形(+2)</option>
+          </optgroup>
+          <optgroup label="不変探索">
+            <option value="clusterDetect">固まり検出α</option>
+            <option value="StraightLine">直線状に発見までα</option>
+            <option value="RippleImmutable">地雷数による波紋α</option>
+            <option value="UntilMine5x5Immutable">クイーン状に発見までα(2)</option>
+            
+          </optgroup>
+        </select>
+      </label>
                 
-              </optgroup>
-            </select>
-          </label>
-          <label >探索
-            <select id="explore">
-              <optgroup label="基本探索">
-                <option value="normal8">8方向(3×3)</option>
-                <option value="big25">8方向(5×5)</option>
-                <option value="big49">8方向(7×7)</option>
-                <option value="Normal8torus">8方向(3×3,トーラス)</option>
-                <option value="knight">ナイト</option>
-                <option value="queen">クイーン</option>
-                <option value="UntilMine5x5">クイーン(2)</option>
-                <option value="Cross1">十字架(1)</option>
-                <option value="Cross2">十字架(2)</option>
-                <option value="Alternating">十字架,8方向交互に</option>
-                <option value="colorAxis">縦横に交互に</option>
-                <option value="colorAxisDiagonal">縦横,斜めに交互に</option>
-                <option value="Ring">リング</option>
-                <option value="Diamond2">菱形(2)</option>
-                <option value="Diamond3">菱形(3)</option>
-                <option value="Global">全範囲</option>
-              </optgroup>
-              <optgroup label="特殊探索">
-                <option value="untilMine">クイーン状に発見まで</option>
-      <option value="expandUntilMine">波紋状に発見まで</option>
-      <option value="ExpandUntil2MinesTriangle">三角状に発見まで(2)</option>
-      <option value="RippleChain">地雷から地雷に接続</option>
-      <option value="Ripple">地雷数による波紋</option>
-      <option value="SquareMineCount">地雷数による正方形(2)</option>
-      <option value="DiamondMineCount">地雷数による菱形(+2)</option>
-    </optgroup>
-    <optgroup label="不変探索">
-      <option value="clusterDetect">固まり検出α</option>
-      <option value="StraightLine">直線状に発見までα</option>
-      <option value="RippleImmutable">地雷数による波紋α</option>
-      <option value="UntilMine5x5Immutable">クイーン状に発見までα(2)</option>
+      <label >表示
+        <select id="number">
+          <optgroup label="基本表示">
+          <option value="total">総数</option>
+          <option value="qmark">クエスチョン</option>
+          <option value="fuzzy">ファジー</option>
+          <option value="colorDiff">色別の差</option>
+          <option value="ColorWeight">色別加重</option>
+          <option value="ClusterQuantity">固まり個数</option>
+          <option value="mod3">余り3</option>
+          <option value="mod10">余り10</option>
+          <option value="Percent">割合</option>
+          <option value="EvenOdd">偶数</option>
+          <option value="Odd">奇数</option>
+          <option value="prime">素数</option>
+          <option value="PrimeOnly">素数以外</option>
+          <option value="distanceSum">距離の合計</option>
+          <option value="distanceProduct">距離の積</option>
+          <option value="NearestTwoProduct">2点からの距離</option>
+          <option value="NeighborAverage">周りの平均値</option>
+          <option value="Median">周りの中央値</option>
       
-    </optgroup>
-  </select>
-</label>
+        </optgroup>
+        <optgroup label="数多の表示">
+          <option value="colorSplit">色別</option>
+          <option value="cluster">固まり</option>
+          <option value="clusterMazMin">固まり最大 最小</option>
+          <option value="range3">3区間まとめ表示</option>
+          <option value="decompose">分解</option> 
+          <option value="TruthLie">真偽</option>
+          <option value="VerticalSplit">上下</option>
+          <option value="HorizontalSplit">左右</option>
+          <option value="ManhattanVector">縦横の距離</option>
+      
+        </optgroup>
+      </select>
+      </label>
 
-<label >表示
-  <select id="number">
-    <optgroup label="基本表示">
-    <option value="total">総数</option>
-    <option value="qmark">クエスチョン</option>
-    <option value="fuzzy">ファジー</option>
-    <option value="colorDiff">色別の差</option>
-    <option value="ColorWeight">色別加重</option>
-    <option value="ClusterQuantity">固まり個数</option>
-    <option value="mod3">余り3</option>
-    <option value="mod10">余り10</option>
-    <option value="Percent">割合</option>
-    <option value="EvenOdd">偶数</option>
-    <option value="Odd">奇数</option>
-    <option value="prime">素数</option>
-    <option value="PrimeOnly">素数以外</option>
-    <option value="distanceSum">距離の合計</option>
-    <option value="distanceProduct">距離の積</option>
-    <option value="NearestTwoProduct">2点からの距離</option>
-    <option value="NeighborAverage">周りの平均値</option>
-    <option value="Median">周りの中央値</option>
-
-  </optgroup>
-  <optgroup label="数多の表示">
-    <option value="colorSplit">色別</option>
-    <option value="cluster">固まり</option>
-    <option value="clusterMazMin">固まり最大 最小</option>
-    <option value="range3">3区間まとめ表示</option>
-    <option value="decompose">分解</option> 
-    <option value="TruthLie">真偽</option>
-    <option value="VerticalSplit">上下</option>
-    <option value="HorizontalSplit">左右</option>
-    <option value="ManhattanVector">縦横の距離</option>
-    
-  </optgroup>
-</select>
-</label>
 
 <!-- 縦・横・地雷 をまとめて 2 列にするブロック -->
 <div class="vh-block">

@@ -1575,6 +1575,218 @@ class Chaos12Placement extends PlacementStrategy {
     }
   }
 }
+//Σの固まり
+class SigmaClusterPlacement extends PlacementStrategy {
+
+  place(board, mineCount, rng, excludeIndex = -1) {
+    const rows = board.rows;
+    const cols = board.cols;
+
+    // --- 最大の k を求める（1+2+…+k ≤ mineCount）
+    let k = Math.floor((Math.sqrt(8 * mineCount + 1) - 1) / 2);
+
+    const MAX_GLOBAL_RETRY = 40;
+    let globalRetry = 0;
+
+    while (globalRetry < MAX_GLOBAL_RETRY) {
+
+      // 全セル初期化
+      for (const c of board.cells) c.mine = false;
+
+      let allSuccess = true;
+
+      // --- 1〜k の固まりを順番に置く ---
+      for (let size = 1; size <= k; size++) {
+
+        let success = false;
+        const MAX_LOCAL_RETRY = 300;
+
+        for (let attempt = 0; attempt < MAX_LOCAL_RETRY; attempt++) {
+
+          // 固まり候補
+          let cluster = [];
+
+          // 1. 最初のセル
+          let idx = Math.floor(rng() * rows * cols);
+          if (idx === excludeIndex) continue;
+
+          let start = board.cells[idx];
+          if (start.mine) continue;
+          if (this._touchesOtherCluster(board, start)) continue;
+
+          cluster.push(start);
+
+          // 2. BFS で size 個まで伸ばす
+          let ok = true;
+
+          while (cluster.length < size) {
+            const base = cluster[Math.floor(rng() * cluster.length)];
+            const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+            const [dr, dc] = dirs[Math.floor(rng() * dirs.length)];
+
+            const rr = base.r + dr;
+            const cc = base.c + dc;
+
+            if (rr < 0 || rr >= rows || cc < 0 || cc >= cols) {
+              ok = false;
+              break;
+            }
+
+            const nb = board.getCell(rr, cc);
+
+            if (cluster.includes(nb)) continue;
+            if (this._touchesOtherCluster(board, nb)) {
+              ok = false;
+              break;
+            }
+
+            cluster.push(nb);
+          }
+
+          if (!ok) continue;
+
+          // --- 配置成功 ---
+          for (const c of cluster) c.mine = true;
+          success = true;
+          break;
+        }
+
+        // ★ この固まりが置けなかった → 盤面全体をやり直す
+        if (!success) {
+          allSuccess = false;
+          break;
+        }
+      }
+
+      // ★ 全固まり成功 → 完了
+      if (allSuccess) return;
+
+      globalRetry++;
+    }
+
+    throw new Error("SigmaClusterPlacement: 配置に失敗しました");
+  }
+
+  // 他の固まりと縦横接触しているか？
+  _touchesOtherCluster(board, cell) {
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    for (const [dr, dc] of dirs) {
+      const rr = cell.r + dr;
+      const cc = cell.c + dc;
+      if (rr < 0 || rr >= board.rows || cc < 0 || cc >= board.cols) continue;
+      const nb = board.getCell(rr, cc);
+      if (nb.mine) return true;
+    }
+    return false;
+  }
+}
+//Σの線
+class SigmaLinePlacement extends PlacementStrategy {
+
+  place(board, mineCount, rng, excludeIndex = -1) {
+    // 全セル初期化
+    for (const c of board.cells) c.mine = false;
+
+    const rows = board.rows;
+    const cols = board.cols;
+
+    // --- 最大の k を求める（1+2+…+k ≤ mineCount）
+    let k = Math.floor((Math.sqrt(8 * mineCount + 1) - 1) / 2);
+
+    let placed = 0;
+
+    // --- 盤面全体のリトライ安全装置 ---
+    const MAX_GLOBAL_RETRY = 40;
+    let globalRetry = 0;
+
+    while (globalRetry < MAX_GLOBAL_RETRY) {
+
+      // 盤面をリセット
+      for (const c of board.cells) c.mine = false;
+      placed = 0;
+
+      let allSuccess = true;
+
+      // --- 1〜k の固まりを順番に置く ---
+      for (let size = 1; size <= k; size++) {
+
+        let success = false;
+
+        // ★ この固まり専用のリトライ回数
+        const MAX_LOCAL_RETRY = 300;
+
+        for (let attempt = 0; attempt < MAX_LOCAL_RETRY; attempt++) {
+
+          // ランダムに縦 or 横を選ぶ
+          const vertical = rng() < 0.5;
+
+          // ランダムに開始位置を選ぶ
+          const r = Math.floor(rng() * rows);
+          const c = Math.floor(rng() * cols);
+
+          let cluster = [];
+
+          // --- 直線を生成 ---
+          for (let i = 0; i < size; i++) {
+            let rr = vertical ? r + i : r;
+            let cc = vertical ? c : c + i;
+
+            // 盤面外なら失敗
+            if (rr < 0 || rr >= rows || cc < 0 || cc >= cols) {
+              cluster = null;
+              break;
+            }
+
+            const cell = board.getCell(rr, cc);
+
+            // 他の固まりと縦横接触していないか
+            if (this._touchesOtherCluster(board, cell)) {
+              cluster = null;
+              break;
+            }
+
+            cluster.push(cell);
+          }
+
+          if (!cluster) continue;
+
+          // --- 配置成功 ---
+          for (const c of cluster) c.mine = true;
+          placed += size;
+          success = true;
+          break;
+        }
+
+        // ★ この固まりが置けなかった → 盤面全体をやり直す
+        if (!success) {
+          allSuccess = false;
+          break;
+        }
+      }
+
+      // ★ 全固まり成功 → 完了
+      if (allSuccess) return;
+
+      globalRetry++;
+    }
+
+    // ★ ここに来ることはほぼ無いが、念のため
+    throw new Error("SigmaLinePlacement: 配置に失敗しました");
+  }
+
+  // 他の固まりと縦横接触しているか？
+  _touchesOtherCluster(board, cell) {
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    for (const [dr, dc] of dirs) {
+      const rr = cell.r + dr;
+      const cc = cell.c + dc;
+      if (rr < 0 || rr >= board.rows || cc < 0 || cc >= board.cols) continue;
+      const nb = board.getCell(rr, cc);
+      if (nb.mine) return true;
+    }
+    return false;
+  }
+}
 //探索範囲  の実装
 // 8方向探索（標準マインスイーパー）
 class Normal8Explore extends ExploreStrategy {
@@ -3332,7 +3544,9 @@ Lightning:LightningPlacement,
 SpiderWeb:SpiderWebPlacement,
 ReducedLuck:ReducedLuckPlacement,
 FractalIslands:FractalIslandsPlacement,
-Chaos12:Chaos12Placement
+Chaos12:Chaos12Placement,
+SigmaCluster:SigmaClusterPlacement,
+SigmaLine:SigmaLinePlacement,
 
 };
 

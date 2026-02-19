@@ -11,7 +11,7 @@ const placementGroups = {
     label: "制限設置",
     items: [
       "pair","rowcolfixed","bridge","ThreeInRow","QuadrantEqual","ColorBalanced",
-      "NoTouch","Cluster4Isolated","TetrisMino"
+      "NoTouch","Cluster4Isolated","TetrisMino","SigmaCluster","SigmaLine"
     ]
   },
   Prohibited: {
@@ -24,7 +24,7 @@ const placementGroups = {
     label: "固まり設置",
     items: [
      "Path","Chaos12","cluster","FractalIslands","NoIsolated","Continent","Lightning","SpiderWeb","Cluster4Isolated"
-     ,"TetrisMino"
+     ,"TetrisMino","SigmaCluster","SigmaLine"
     ]
   },
   Equal: {
@@ -49,13 +49,13 @@ const placementGroups = {
     label: "中級者向け",
     items: [
       "Chaos12","noDiagonal","noOrthogonal","NoIsolated","Continent","pair","rowcolfixed","ThreeInRow",
-      "TetrisMino"
+      "TetrisMino","SigmaLine"
     ]
   },
   Advanced: {
     label: "上級者向け",
     items: [
-      "cluster","FractalIslands","Path","Lightning","SpiderWeb","bridge","Cluster4Isolated"
+      "cluster","FractalIslands","Path","Lightning","SpiderWeb","bridge","Cluster4Isolated","SigmaCluster"
     ]
   }
 
@@ -233,6 +233,8 @@ const placementJP = {
   NoTouch:"ぼっち",
   Cluster4Isolated:"4近傍孤立",
   TetrisMino:"テトリスミノ",
+  SigmaCluster:"シグマ固まり",
+  SigmaLine:"シグマ直線",
 }
 const exploreJP = {
   normal8: "8方向(3×3)",
