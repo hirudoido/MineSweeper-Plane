@@ -359,7 +359,7 @@ d.addEventListener("mouseenter", () => {
   const ns = this._getNeighbors(cell);
   for (const nb of ns) {
     //ルールによって色を変える
-   let skip = ["clusterDetect","RippleImmutable", "UntilMine5x5Immutable"];
+   let skip = ["clusterDetect","RippleImmutable", "UntilMine5x5Immutable","RandomBlindSpot","CrossBlindSpot"];
     //!skip.includes(search)
      let  search =document.getElementById("explore").value;
     if(skip.includes(search)){  
@@ -420,8 +420,17 @@ _getNeighbors(cell) {
     const cross = new Cross4Explore();
     return cross.neighbors(this.board, cell.r, cell.c);
   }
+  //クイーンのときだけ
   if (search =="UntilMine5x5Immutable") {
     const cross = new UntilMine5x5Explore();
+    return cross.neighbors(this.board, cell.r, cell.c);
+  }
+    if (search =="RandomBlindSpot") {
+    const cross = new Normal8Explore();
+    return cross.neighbors(this.board, cell.r, cell.c);
+  }
+   if (search =="CrossBlindSpot") {
+    const cross = new Cross2Explore();
     return cross.neighbors(this.board, cell.r, cell.c);
   }
   return this.explore.neighbors(this.board, cell.r, cell.c);

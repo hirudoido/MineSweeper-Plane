@@ -82,20 +82,21 @@ const exploreGroups = {
   immutable: {
     label: "不変探索",
     items: [
-      "clusterDetect","StraightLine","RippleImmutable","UntilMine5x5Immutable"
+      "clusterDetect","StraightLine","RippleImmutable","UntilMine5x5Immutable",
+      "RandomBlindSpot","CrossBlindSpot"
     ]
   },
   square: {
     label: "正方形探索",
     items: [
-      "normal8","big25","big49","Normal8torus",
+      "normal8","big25","big49","Normal8torus","RandomBlindSpot"
       ,"RippleChain","SquareMineCount","Alternating"
     ]
   },
   rectangle:{
     label: "長方形探索",
     items: [
-      "Cross1","Cross2","colorAxis","colorAxisDiagonal","StraightLine","Alternating"
+      "Cross1","Cross2","CrossBlindSpot","colorAxis","colorAxisDiagonal","StraightLine","Alternating"
     ]
   },
   chess: {
@@ -128,7 +129,7 @@ const exploreGroups = {
     label: "上級者向け",
     items: [
       "big49","colorAxis","colorAxisDiagonal","Diamond3","ExpandUntil2MinesTriangle","RippleChain",
-      "DiamondMineCount","StraightLine","clusterDetect","RippleImmutable","Global"
+      "DiamondMineCount","StraightLine","clusterDetect","RippleImmutable","RandomBlindSpot","CrossBlindSpot","Global"
     ]
   }
 
@@ -137,7 +138,7 @@ const numberGroups = {
   basic: {
     label: "基本表示",
     items: [
-      "total","qmark","fuzzy","colorDiff","ColorWeight","ClusterQuantity",
+      "total","qmark","HalfMineReveal","fuzzy","colorDiff","ColorWeight","ClusterQuantity",
       "mod3","mod10","Percent","EvenOdd","Odd","prime","PrimeOnly",
       "distanceSum","distanceProduct","NearestTwoProduct","NeighborAverage",
       "Median"
@@ -184,7 +185,7 @@ const numberGroups = {
   unique: {
     label: "個性的な表示",
     items: [
-      "qmark","fuzzy","range3","TruthLie","VerticalSplit","HorizontalSplit"
+      "qmark","HalfMineReveal","fuzzy","range3","TruthLie","VerticalSplit","HorizontalSplit"
     ]
   },
   Beginner: {
@@ -203,7 +204,7 @@ const numberGroups = {
   Advanced: {
     label: "上級者向け",
     items: [
-      "qmark","colorDiff","mod3","Percent","distanceSum","NeighborAverage","range3","ManhattanVector","Median"
+      "qmark","HalfMineReveal","colorDiff","mod3","Percent","distanceSum","NeighborAverage","range3","ManhattanVector","Median"
     ]
   }
 
@@ -241,6 +242,7 @@ const exploreJP = {
   big25: "8方向(5×5)",
   big49: "8方向(7×7)",
   Normal8torus: "8方向(3×3,トーラス)",
+  
   knight: "ナイト",
   queen: "クイーン",
   UntilMine5x5: "クイーン(2)",
@@ -267,12 +269,15 @@ const exploreJP = {
   clusterDetect: "固まり検出α",
   StraightLine: "直線状に発見までα",
   RippleImmutable: "地雷数による波紋α",
-  UntilMine5x5Immutable: "クイーン状に発見までα(2)"
+  UntilMine5x5Immutable: "クイーン状に発見までα(2)",
+  RandomBlindSpot:"8方向(3×3,盲点)",
+  CrossBlindSpot:"十字架(2,盲点)",
 };
 // 表示ルール分類
 const numberJP = {
   total: "総数",
-  qmark: "クエスチョン",
+  qmark: "上位クエスチョン",
+  HalfMineReveal:"下限クエスチョン",
   fuzzy: "ファジー",
   colorDiff: "色別の差",
   ColorWeight: "色別加重",

@@ -2539,8 +2539,102 @@ class Normal8torusExplore extends ExploreStrategy {
     return out;
   }
 }
+// 8方向盲点
+class RandomBlindSpotExplore extends ExploreStrategy {
+ constructor() {
+    super();
 
+    // シード値から RNG を作る
+    const seed = document.getElementById("seed").value || "123456";
+    const rng = makeRngFromSeed(seed + "_blind");
 
+    // 3×3 の中で中央以外の 8 マスから 1 つ選ぶ
+    const spots = [];
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue; // 中央は除外
+        spots.push([dr, dc]);
+      }
+    }
+
+    // ★ 盤面全体で共通の blind spot を決定
+    this.blindSpot = spots[Math.floor(rng() * spots.length)];
+  }
+
+  neighbors(board, r, c) {
+    const rows = board.rows;
+    const cols = board.cols;
+
+    const out = [];
+
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+
+        // 中央は除外
+        if (dr === 0 && dc === 0) continue;
+
+        // ★ blind spot は除外
+        if (dr === this.blindSpot[0] && dc === this.blindSpot[1]) continue;
+
+        const rr = r + dr;
+        const cc = c + dc;
+
+        if (rr >= 0 && rr < rows && cc >= 0 && cc < cols) {
+          out.push(board.getCell(rr, cc));
+        }
+      }
+    }
+
+    return out;
+  }
+}
+// 十字盲点
+class CrossBlindSpotExplore extends ExploreStrategy {
+  constructor() {
+    super();
+
+    // シード値から RNG を作る
+    const seed = document.getElementById("seed").value || "123456";
+    const rng = makeRngFromSeed(seed + "_crossblind");
+
+    // 十字の4方向
+    this.dirs = [
+      [-1, 0],
+      [-2, 0], // 上
+      [1, 0], 
+      [2, 0], // 下
+      [0, -1],
+      [0, -2], // 左
+      [0, 1] ,
+      [0, 2]  // 右
+    ];
+
+    // ★ 盤面全体で共通の blind spot を決定
+    this.blindSpot = this.dirs[Math.floor(rng() * this.dirs.length)];
+  }
+
+  neighbors(board, r, c) {
+    const rows = board.rows;
+    const cols = board.cols;
+
+    const out = [];
+
+    for (const [dr, dc] of this.dirs) {
+
+      // ★ blind spot は除外
+      if (dr === this.blindSpot[0] && dc === this.blindSpot[1]) continue;
+
+      const rr = r + dr;
+      const cc = c + dc;
+
+      if (rr >= 0 && rr < rows && cc >= 0 && cc < cols) {
+        out.push(board.getCell(rr, cc));
+      }
+    }
+
+    return out;
+  }
+}
 // ====== 数字ルール実装 ======
 // 総数ルール（標準）
 class TotalNumberRule extends NumberRule {
@@ -3521,6 +3615,45 @@ class MedianNumberRule extends NumberRule {
     return cell.displayValue ?? "";
   }
 }
+// 半分以上地雷なら数字を表示
+class HalfMineRevealRule extends NumberRule {
+  calculate(cell, neighbors) {
+    // 通常の真値（内部用）
+    cell.trueValue = neighbors.filter(nb => nb.mine).length;
+
+    // 探索ルールに従って neighbors を取得
+    const ns = currentGame.explore.neighbors(cell.board, cell.r, cell.c);
+
+    // ★ 地雷数
+    const mineCount = ns.filter(nb => nb.mine).length;
+
+    // ★ 全体数
+    const total = ns.length;
+
+    // ★ safeZone（地雷が1つもない）
+    cell.safeZone = mineCount === 0;
+
+    // ★ 地雷が 0 → 空白
+    if (mineCount === 0) {
+      cell.displayValue = "";
+      return cell.trueValue;
+    }
+
+    // ★ 半分以上が地雷 → 数字を表示
+    if (mineCount >= total * 0.63) {
+      cell.displayValue = String(cell.trueValue);
+    } else {
+      // ★ 半分未満 → 「？」表示
+      cell.displayValue = "?";
+    }
+
+    return cell.trueValue;
+  }
+
+  render(cell) {
+    return cell.displayValue ?? "";
+  }
+}
 // ====== ★ここでマップを定義 ======
 const placementMap = {
   random: RandomPlacement,
@@ -3577,7 +3710,10 @@ const exploreMap = {
     StraightLine:StraightLineExplore,
     UntilMine5x5Immutable:UntilMine5x5ImmutableExplore,
     UntilMine5x5:UntilMine5x5Explore,
-    Normal8torus:Normal8torusExplore
+    Normal8torus:Normal8torusExplore,
+    RandomBlindSpot:RandomBlindSpotExplore,
+    CrossBlindSpot:CrossBlindSpotExplore,
+
 
     
 
@@ -3610,7 +3746,8 @@ ManhattanVector: ManhattanVectorRule,
 VerticalSplit: VerticalSplitCountRule,
 HorizontalSplit: HorizontalSplitCountRule,
 ClusterQuantity:ClusterQuantityNumberRule,
-Median:MedianNumberRule
+Median:MedianNumberRule,
+HalfMineReveal:HalfMineRevealRule
 };
 
 

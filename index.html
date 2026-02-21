@@ -450,6 +450,8 @@ height: 140%;
             <option value="StraightLine">直線状に発見までα</option>
             <option value="RippleImmutable">地雷数による波紋α</option>
             <option value="UntilMine5x5Immutable">クイーン状に発見までα(2)</option>
+            <option value="RandomBlindSpot">8方向(3×3,盲点)</option>
+            <option value="CrossBlindSpot">十字架(2,盲点)</option>
             
           </optgroup>
         </select>
@@ -459,7 +461,8 @@ height: 140%;
         <select id="number">
           <optgroup label="基本表示">
           <option value="total">総数</option>
-          <option value="qmark">クエスチョン</option>
+          <option value="qmark">上位クエスチョン</option>
+          <option value="HalfMineReveal">下限クエスチョン</option>
           <option value="fuzzy">ファジー</option>
           <option value="colorDiff">色別の差</option>
           <option value="ColorWeight">色別加重</option>
