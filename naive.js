@@ -3654,6 +3654,188 @@ class HalfMineRevealRule extends NumberRule {
     return cell.displayValue ?? "";
   }
 }
+// 差を大きい方を採用
+class BiasDiffNumberRule extends NumberRule {
+  calculate(cell, neighbors) {
+    // 真値（内部用）
+    cell.trueValue = neighbors.filter(nb => nb.mine).length;
+
+    // 地雷ゼロ → 空白
+    if (cell.trueValue === 0) {
+      cell.displayValue = "";
+      cell.safeZone = true;
+      return cell.trueValue;
+    }
+
+    const r0 = cell.r;
+    const c0 = cell.c;
+
+    let up = 0, down = 0, left = 0, right = 0;
+
+    for (const nb of neighbors) {
+      if (!nb.mine) continue;
+
+      if (nb.r <= r0) up++;
+      if (nb.r >= r0) down++;
+      if (nb.c <= c0) left++;
+      if (nb.c >= c0) right++;
+    }
+
+    // 上下差・左右差
+    const ud = Math.abs(up - down);
+    const lr = Math.abs(left - right);
+
+    const diff = Math.max(ud, lr);
+
+    // 方向ラベル
+    let label = "";
+    if (ud > lr) {
+      label = "上下";
+    } else if (lr > ud) {
+      label = "左右";
+    } else {
+      label = "両方";
+    }
+
+    // ★ 改行して表示
+    cell.displayValue =" " + diff + "<br>" + label;
+
+    cell.safeZone = false;
+    return cell.trueValue;
+  }
+
+  render(cell) {
+    return cell.displayValue ?? "";
+  }
+}
+
+
+// 上下差
+class VerticalBiasDiffNumberRule extends NumberRule {
+  calculate(cell, neighbors) {
+    // 真値（内部用）
+    cell.trueValue = neighbors.filter(nb => nb.mine).length;
+
+    // 地雷ゼロ → 空白
+    if (cell.trueValue === 0) {
+      cell.displayValue = "";
+      cell.safeZone = true;
+      return cell.trueValue;
+    }
+
+    const r0 = cell.r;
+
+
+    let up = 0, down = 0
+
+    for (const nb of neighbors) {
+      if (!nb.mine) continue;
+
+      if (nb.r <= r0) up++;
+      if (nb.r >= r0) down++;
+
+    }
+
+    // 上下差
+    const diff = Math.abs(up - down);
+
+
+    // 差が 0 → "0"
+    // 差が 1〜9 → その数字
+    cell.displayValue = diff === 0 ? "0" : String(diff);
+
+    // safeZone は地雷ゼロのみ
+    cell.safeZone = false;
+
+    return cell.trueValue;
+  }
+
+  render(cell) {
+    return cell.displayValue ?? "";
+  }
+}
+// 差を大きい方を採用
+class HorizontalBiasDiffNumberRule extends NumberRule {
+  calculate(cell, neighbors) {
+    // 真値（内部用）
+    cell.trueValue = neighbors.filter(nb => nb.mine).length;
+
+    // 地雷ゼロ → 空白
+    if (cell.trueValue === 0) {
+      cell.displayValue = "";
+      cell.safeZone = true;
+      return cell.trueValue;
+    }
+
+    const c0 = cell.c;
+
+    let  left = 0, right = 0;
+
+    for (const nb of neighbors) {
+      if (!nb.mine) continue;
+
+        if (nb.c <= c0) left++;
+      if (nb.c >= c0) right++;
+    }
+
+    // 左右差
+
+    const diff =  Math.abs(left - right);
+
+    // 差が 0 → "0"
+    // 差が 1〜9 → その数字
+    cell.displayValue = diff === 0 ? "0" : String(diff);
+
+    // safeZone は地雷ゼロのみ
+    cell.safeZone = false;
+
+    return cell.trueValue;
+  }
+
+  render(cell) {
+    return cell.displayValue ?? "";
+  }
+}
+// 周囲地雷数
+class PerimeterRule extends NumberRule {
+  calculate(cell, neighbors) {
+    const mines = neighbors.filter(nb => nb.mine);
+    cell.trueValue = mines.length;
+
+    // 地雷ゼロ → 空白
+    if (mines.length === 0) {
+      cell.displayValue = "";
+      cell.safeZone = true;
+      return 0;
+    }
+
+    let per = 0;
+
+    for (const nb of mines) {
+      const r = nb.r;
+      const c = nb.c;
+
+      // 上
+      if (!neighbors.some(x => x.r === r - 1 && x.c === c && x.mine)) per++;
+      // 下
+      if (!neighbors.some(x => x.r === r + 1 && x.c === c && x.mine)) per++;
+      // 左
+      if (!neighbors.some(x => x.r === r && x.c === c - 1 && x.mine)) per++;
+      // 右
+      if (!neighbors.some(x => x.r === r && x.c === c + 1 && x.mine)) per++;
+    }
+
+    // 外周長をそのまま表示
+    cell.displayValue = String(per);
+    cell.safeZone = false;
+
+    return cell.trueValue;
+  }
+
+  render(cell) {
+    return cell.displayValue ?? "";
+  }
+}
 // ====== ★ここでマップを定義 ======
 const placementMap = {
   random: RandomPlacement,
@@ -3747,7 +3929,11 @@ VerticalSplit: VerticalSplitCountRule,
 HorizontalSplit: HorizontalSplitCountRule,
 ClusterQuantity:ClusterQuantityNumberRule,
 Median:MedianNumberRule,
-HalfMineReveal:HalfMineRevealRule
+HalfMineReveal:HalfMineRevealRule,
+BiasDiff: BiasDiffNumberRule,
+VerticalBiasDiff:VerticalBiasDiffNumberRule,
+HorizontalBiasDiff:HorizontalBiasDiffNumberRule,
+Perimeter:PerimeterRule,
 };
 
 

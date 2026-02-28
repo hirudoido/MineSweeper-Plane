@@ -157,7 +157,10 @@ height: 6px;
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
+  text-align:center;
+
 }
+
 
 .cell.open {
   background: #1b1b28;
@@ -301,7 +304,7 @@ height: 6px;
   display: inline-block;
   min-width: 0.6em;           /* 数字や記号ごとに余白 */
   text-align: center;
-    white-space: pre;
+  white-space: pre;
 }
 #explore {
   height: auto;
@@ -477,6 +480,9 @@ height: 140%;
           <option value="distanceSum">距離の合計</option>
           <option value="distanceProduct">距離の積</option>
           <option value="NearestTwoProduct">2点からの距離</option>
+          <option value="Perimeter">外周長</option>
+          <option value="VerticalBiasDiff">上下の差</option>
+          <option value="HorizontalBiasDiff">左右の差</option>
           <option value="NeighborAverage">周りの平均値</option>
           <option value="Median">周りの中央値</option>
       
@@ -490,8 +496,9 @@ height: 140%;
           <option value="TruthLie">真偽</option>
           <option value="VerticalSplit">上下</option>
           <option value="HorizontalSplit">左右</option>
+          <option value="BiasDiff">上下左右の差</option>
           <option value="ManhattanVector">縦横の距離</option>
-      
+          
         </optgroup>
       </select>
       </label>

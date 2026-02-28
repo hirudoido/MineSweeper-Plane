@@ -468,7 +468,7 @@ if (cell.open) {
 
 
 // 除外ルール
-const skip = ["cluster", "VerticalSplit", "HorizontalSplit","ManhattanVector"];
+const skip = ["cluster", "VerticalSplit", "HorizontalSplit","ManhattanVector","BiasDiff"];
 
 // 除外ルールならフォント調整しない
 if (true) {
