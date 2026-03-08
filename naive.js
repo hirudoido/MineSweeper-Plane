@@ -3836,6 +3836,221 @@ class PerimeterRule extends NumberRule {
     return cell.displayValue ?? "";
   }
 }
+// 秩序度
+class OrderlinessRule extends NumberRule {
+  calculate(cell, neighbors) {
+    const mines = neighbors.filter(nb => nb.mine);
+    cell.trueValue = mines.length;
+
+    if (mines.length === 0) {
+      cell.displayValue = "";
+      cell.safeZone = true;
+      return 0;
+    }
+
+    const r0 = cell.r;
+    const c0 = cell.c;
+
+    const distances = mines.map(nb => {
+      return Math.abs(nb.r - r0) + Math.abs(nb.c - c0);
+    });
+
+    distances.sort((a, b) => a - b);
+
+    let delta = 0;
+    for (let i = 0; i < distances.length - 1; i++) {
+      delta += Math.abs(distances[i + 1] - distances[i]);
+    }
+
+    // Δ の最大値を 6 として正規化
+    const percent = (delta / 6) * 100;
+
+    // 小数1桁の％表示
+    cell.displayValue = percent.toFixed(1) + "%";
+    cell.safeZone = false;
+
+    return cell.trueValue;
+  }
+
+  render(cell) {
+    return cell.displayValue ?? "";
+  }
+}
+// 複素数
+class CompositeComplexRule extends NumberRule {
+  calculate(cell, neighbors) {
+    const mines = neighbors.filter(nb => nb.mine);
+    cell.trueValue = mines.length;
+
+    if (mines.length === 0) {
+      cell.displayValue = "";
+      cell.safeZone = true;
+      return 0;
+    }
+
+    const r0 = cell.r;
+    const c0 = cell.c;
+
+    let M_re = 0;
+    let M_im = 0;
+
+    for (const nb of mines) {
+      const x = nb.c - c0; // 横
+      const y = nb.r - r0; // 縦
+
+      // z^2 = (x^2 - y^2) + i(2xy)
+      const re = x * x - y * y;
+      const im = 2 * x * y;
+
+      M_re += re;
+      M_im += im;
+    }
+
+    // 整数に丸める
+    const a = Math.round(M_re);
+    const b = Math.round(M_im);
+
+    let text = "";
+
+    if (a === 0 && b === 0) {
+      // ★ ここを変更：0+0i を表示
+      text = "0+0i";
+      cell.safeZone = false;
+    } else if (a === 0) {
+      text = `${b}i`;
+      cell.safeZone = false;
+    } else if (b === 0) {
+      text = `${a}`;
+      cell.safeZone = false;
+    } else {
+      const sign = b >= 0 ? "+" : "-";
+      const absB = Math.abs(b);
+      text = `${a}${sign}${absB}i`;
+      cell.safeZone = false;
+    }
+
+    cell.displayValue = text;
+    return cell.trueValue;
+  }
+
+  render(cell) {
+    return cell.displayValue ?? "";
+  }
+}
+// スキャン左右
+class ScanRatioinfluenceRule extends NumberRule {
+  calculate(cell, neighbors) {
+    const mines = neighbors.filter(nb => nb.mine);
+    cell.trueValue = mines.length;
+
+    if (mines.length === 0) {
+      cell.displayValue = "";
+      cell.safeZone = true;
+      return 0;
+    }
+
+    // neighbors を行ごとにグループ化（r の昇順、c の昇順）
+    const rows = {};
+    for (const nb of neighbors) {
+      if (!rows[nb.r]) rows[nb.r] = [];
+      rows[nb.r].push(nb);
+    }
+    for (const r in rows) {
+      rows[r].sort((a, b) => a.c - b.c);
+    }
+
+    let leftTotal = 0;
+    let rightTotal = 0;
+
+    // 左スキャン
+    for (const r in rows) {
+      const row = rows[r];
+      let count = 0;
+      for (const nb of row) {
+        if (nb.mine) break;
+        count++;
+      }
+      leftTotal += count;
+    }
+
+    // 右スキャン
+    for (const r in rows) {
+      const row = rows[r];
+      let count = 0;
+      for (let i = row.length - 1; i >= 0; i--) {
+        if (row[i].mine) break;
+        count++;
+      }
+      rightTotal += count;
+    }
+
+    cell.displayValue = `${leftTotal}:${rightTotal}`;
+    cell.safeZone = false;
+
+    return cell.trueValue;
+  }
+
+  render(cell) {
+    return cell.displayValue ?? "";
+  }
+}
+// スキャン上下
+class ScanVerticalRatioRule extends NumberRule {
+  calculate(cell, neighbors) {
+    const mines = neighbors.filter(nb => nb.mine);
+    cell.trueValue = mines.length;
+
+    if (mines.length === 0) {
+      cell.displayValue = "";
+      cell.safeZone = true;
+      return 0;
+    }
+
+    // neighbors を列ごとにグループ化（c の昇順、r の昇順）
+    const cols = {};
+    for (const nb of neighbors) {
+      if (!cols[nb.c]) cols[nb.c] = [];
+      cols[nb.c].push(nb);
+    }
+    for (const c in cols) {
+      cols[c].sort((a, b) => a.r - b.r);
+    }
+
+    let upTotal = 0;
+    let downTotal = 0;
+
+    // 上スキャン
+    for (const c in cols) {
+      const col = cols[c];
+      let count = 0;
+      for (const nb of col) {
+        if (nb.mine) break;
+        count++;
+      }
+      upTotal += count;
+    }
+
+    // 下スキャン
+    for (const c in cols) {
+      const col = cols[c];
+      let count = 0;
+      for (let i = col.length - 1; i >= 0; i--) {
+        if (col[i].mine) break;
+        count++;
+      }
+      downTotal += count;
+    }
+
+    cell.displayValue = `${upTotal}:${downTotal}`;
+    cell.safeZone = false;
+
+    return cell.trueValue;
+  }
+
+  render(cell) {
+    return cell.displayValue ?? "";
+  }
+}
 // ====== ★ここでマップを定義 ======
 const placementMap = {
   random: RandomPlacement,
@@ -3934,6 +4149,11 @@ BiasDiff: BiasDiffNumberRule,
 VerticalBiasDiff:VerticalBiasDiffNumberRule,
 HorizontalBiasDiff:HorizontalBiasDiffNumberRule,
 Perimeter:PerimeterRule,
+Orderliness:OrderlinessRule,
+CompositeComplex:CompositeComplexRule,
+ScanRatioinfluence:ScanRatioinfluenceRule,
+ScanVerticalRatio:ScanVerticalRatioRule,
+
 };
 
 
