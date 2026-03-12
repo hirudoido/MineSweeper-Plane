@@ -3754,7 +3754,7 @@ class VerticalBiasDiffNumberRule extends NumberRule {
     return cell.displayValue ?? "";
   }
 }
-// 差を大きい方を採用
+// 左右差
 class HorizontalBiasDiffNumberRule extends NumberRule {
   calculate(cell, neighbors) {
     // 真値（内部用）
@@ -4051,6 +4051,379 @@ class ScanVerticalRatioRule extends NumberRule {
     return cell.displayValue ?? "";
   }
 }
+// 四方向スキャン
+class ScanFourDirectionRule extends NumberRule {
+  calculate(cell, neighbors) {
+    const mines = neighbors.filter(nb => nb.mine);
+    cell.trueValue = mines.length;
+
+    if (mines.length === 0) {
+      cell.displayValue = "";
+      cell.safeZone = true;
+      return 0;
+    }
+
+    // 行ごとにグループ化
+    const rows = {};
+    for (const nb of neighbors) {
+      if (!rows[nb.r]) rows[nb.r] = [];
+      rows[nb.r].push(nb);
+    }
+    for (const r in rows) {
+      rows[r].sort((a, b) => a.c - b.c);
+    }
+
+    // 列ごとにグループ化
+    const cols = {};
+    for (const nb of neighbors) {
+      if (!cols[nb.c]) cols[nb.c] = [];
+      cols[nb.c].push(nb);
+    }
+    for (const c in cols) {
+      cols[c].sort((a, b) => a.r - b.r);
+    }
+
+    const counted = new Set();
+
+    const add = (nb) => counted.add(`${nb.r},${nb.c}`);
+
+    // 左スキャン
+    for (const r in rows) {
+      for (const nb of rows[r]) {
+        if (nb.mine) break;
+        add(nb);
+      }
+    }
+
+    // 右スキャン
+    for (const r in rows) {
+      const row = rows[r];
+      for (let i = row.length - 1; i >= 0; i--) {
+        if (row[i].mine) break;
+        add(row[i]);
+      }
+    }
+
+    // 上スキャン
+    for (const c in cols) {
+      for (const nb of cols[c]) {
+        if (nb.mine) break;
+        add(nb);
+      }
+    }
+
+    // 下スキャン
+    for (const c in cols) {
+      const col = cols[c];
+      for (let i = col.length - 1; i >= 0; i--) {
+        if (col[i].mine) break;
+        add(col[i]);
+      }
+    }
+
+    const total = counted.size;
+
+    cell.displayValue = `${total}`;
+    cell.safeZone = false;
+
+    return cell.trueValue;
+  }
+
+  render(cell) {
+    return cell.displayValue ?? "";
+  }
+}
+//集大成
+
+class CompositeCellRule extends NumberRule {
+  constructor(explore) {
+    super();
+    this.explore = explore; // 探索ルールに従う
+  }
+
+  calculate(cell, neighbors) {
+    const rule = cell.displayRule;
+    let v = 0;
+
+    switch (rule) {
+
+      // --- 総数 ---
+      case 1:
+        v = neighbors.filter(n => n.mine).length;
+        break;
+
+      // --- ファジー ---
+      case 2:
+        v = neighbors.filter(n => n.mine).length;
+        break;
+
+      // --- 色別の差 ---
+      case 3: {
+        let light = 0, dark = 0;
+        for (const nb of neighbors) {
+          if (nb.mine) {
+            ((nb.r + nb.c) % 2 === 0) ? light++ : dark++;
+          }
+        }
+        if (light === 0 && dark === 0) v = null;
+        else v = Math.abs(light - dark);
+        break;
+      }
+
+      // --- 色加重 ---
+      case 4: {
+        let total = 0;
+        for (const nb of neighbors) {
+          if (nb.mine) {
+            const isLight = ((nb.r + nb.c) % 2 === 0);
+            total += isLight ? 1 : 2;
+          }
+        }
+        v = total;
+        break;
+      }
+
+      // --- 固まり個数 ---
+      case 5: {
+        const mines = neighbors.filter(nb => nb.mine);
+        const visited = new Set();
+        let groups = 0;
+
+        for (const m of mines) {
+          const key = `${m.r},${m.c}`;
+          if (visited.has(key)) continue;
+
+          this._floodLocalCluster(m, neighbors, visited);
+          groups++;
+        }
+        v = groups;
+        break;
+      }
+
+      // --- 余り3 ---
+      case 6: {
+        const count = neighbors.filter(nb => nb.mine).length;
+        cell._rawCount = count;
+        v = (count === 0) ? 0 : (count % 3);
+        break;
+      }
+      // --- 距離2 ---
+      case 7: {
+      const board = cell.board;
+      const scope = this.explore.neighbors(board, cell.r, cell.c);
+
+    
+      const d2s = [];
+      for (const nb of scope) {
+        if (!nb || !nb.mine) continue;
+        const dx = cell.r - nb.r;
+        const dy = cell.c - nb.c;
+        d2s.push(dx*dx + dy*dy);
+      }
+    
+      if (d2s.length === 0) {
+        cell.displayValue = "";
+        v = 0;
+        break;
+      }
+    
+      d2s.sort((a,b)=>a-b);
+      const d1 = d2s[0];
+    
+      if (d2s.length === 1) {
+        cell.displayValue = simplifySqrt(d1);
+        v = Math.sqrt(d1);
+        break;
+      }
+    
+      let d2 = null;
+      for (let i=1;i<d2s.length;i++){
+        if (d2s[i] > d1) { d2 = d2s[i]; break; }
+      }
+    
+      if (d2 === null) {
+        cell.displayValue = simplifySqrt(d1);
+        v = Math.sqrt(d1);
+        break;
+      }
+    
+      const n = d1 * d2;
+      cell.displayValue = simplifySqrt(n);
+      v = Math.sqrt(n);
+      break;
+    }//外周
+    case 8: {
+  const mines = neighbors.filter(nb => nb.mine);
+  if (mines.length === 0) {
+  cell.displayValue = "";
+  v = 0;
+  break;
+  }
+  
+  let per = 0;
+  for (const nb of mines) {
+  const r = nb.r, c = nb.c;
+  
+  if (!neighbors.some(x => x.r===r-1 && x.c===c && x.mine)) per++;
+  if (!neighbors.some(x => x.r===r+1 && x.c===c && x.mine)) per++;
+  if (!neighbors.some(x => x.r===r && x.c===c-1 && x.mine)) per++;
+  if (!neighbors.some(x => x.r===r && x.c===c+1 && x.mine)) per++;
+  }
+  
+  cell.displayValue = String(per);
+  v = mines.length;
+  break;
+  }//上下差
+    case 9: {
+  const trueCount = neighbors.filter(nb => nb.mine).length;
+  if (trueCount === 0) {
+    cell.displayValue = "";
+    v = 0;
+    break;
+  }
+
+  const r0 = cell.r;
+  let up = 0, down = 0;
+
+  for (const nb of neighbors) {
+    if (!nb.mine) continue;
+    if (nb.r <= r0) up++;
+    if (nb.r >= r0) down++;
+  }
+
+  const diff = Math.abs(up - down);
+  cell.displayValue = String(diff);
+  v = trueCount;
+  break;
+}//左右差
+case 10: {
+  const trueCount = neighbors.filter(nb => nb.mine).length;
+  if (trueCount === 0) {
+    cell.displayValue = "";
+    v = 0;
+    break;
+  }
+
+  const c0 = cell.c;
+  let left = 0, right = 0;
+
+  for (const nb of neighbors) {
+    if (!nb.mine) continue;
+    if (nb.c <= c0) left++;
+    if (nb.c >= c0) right++;
+  }
+
+  const diff = Math.abs(left - right);
+  cell.displayValue = String(diff);
+  v = trueCount;
+  break;
+}
+    }
+
+    cell.value = v;
+    return v;
+  }
+
+  // clusterCount 用 BFS
+  _floodLocalCluster(start, neighbors, visited) {
+    const q = [start];
+    while (q.length) {
+      const cur = q.pop();
+      const key = `${cur.r},${cur.c}`;
+      if (visited.has(key)) continue;
+      visited.add(key);
+
+      const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+      for (const [dr, dc] of dirs) {
+        const rr = cur.r + dr;
+        const cc = cur.c + dc;
+        const nb = neighbors.find(n => n.r === rr && n.c === cc && n.mine);
+        if (nb) q.push(nb);
+      }
+    }
+  }
+
+  render(cell) {
+    const rule = cell.displayRule;
+    
+    // --- total ---
+    if (rule === 1) {
+      if (cell.value === 0) return "";
+      return `${cell.value}<span class="ruleTag">総数</span>`;
+    }
+    // --- fuzzy ファジー ---
+    if (rule === 2) {
+      if (cell.value === 0) return ``;
+      const offset = Math.random() < 0.5 ? -1 : +1;
+      return `${Math.max(0, cell.value + offset)}<span class="ruleTag">ファジ</span>`;
+    }
+
+    // --- colorDiff いろべつ---
+    if (rule ===3) {
+      if (cell.value === null) return ``;
+      return `${cell.value}<span class="ruleTag">色別差</span>`;
+    }
+
+    // --- colorWeighted 色重---
+    if (rule === 4) {
+      if (cell.value === 0) return ``;
+      return `${cell.value}<span class="ruleTag">色加重</span>`;
+    }
+
+    // --- clusterCount固まり個数 ---
+    if (rule === 5) {
+      if (!cell.value) return ``;
+      return `${cell.value}<span class="ruleTag">固個数</span>`;
+    }
+
+    // --- mod3 ---
+    if (rule === 6) {
+      if (cell._rawCount === 0) return ``;
+      return `${cell.value}<span class="ruleTag">余り3</span>`;
+    }
+    // --- 距離 ---
+    
+    if (rule === 7) {
+      if (cell.value === 0) return ``;
+      return `${cell.displayValue ?? ""}<span class="ruleTag">距離</span>`;
+    }// 外周
+    if (rule === 8) {
+      if (cell.value === 0) return ``;
+      return `${cell.displayValue}<span class="ruleTag">外周長</span>`;   
+    }// 上下差
+    if (rule === 9) {
+      if (cell.value === 0) return ``;
+      return `${cell.displayValue}<span class="ruleTag">上下差</span>`;
+    }// 左右差
+    if (rule === 10) {
+      if (cell.value === 0) return ``;
+      return `${cell.displayValue}<span class="ruleTag">左右差</span>`;
+    }
+    return String(cell.value);
+  }
+ isZero(cell) {
+  const rule = cell.displayRule;
+
+  // 色別差：null をゼロ扱い
+  if (rule === 3) {
+    return cell.value === null;
+  }
+
+  // 色加重 / 固まり個数 / 距離 / 外周 / 上下差 / 左右差：0 をゼロ扱い
+  if (rule === 4 || rule === 5 || rule === 7 ||
+      rule === 8 || rule === 9 || rule === 10) {
+    return cell.value === 0;
+  }
+
+  // mod3：生のカウントが 0 のときだけゼロ扱い
+  if (rule === 6) {
+    return cell._rawCount === 0;
+  }
+
+  // それ以外はデフォルト
+  return cell.value === 0;
+}
+}
 // ====== ★ここでマップを定義 ======
 const placementMap = {
   random: RandomPlacement,
@@ -4153,6 +4526,9 @@ Orderliness:OrderlinessRule,
 CompositeComplex:CompositeComplexRule,
 ScanRatioinfluence:ScanRatioinfluenceRule,
 ScanVerticalRatio:ScanVerticalRatioRule,
+ScanFourDirection:ScanFourDirectionRule,
+CompositeCell:CompositeCellRule,
+
 
 };
 

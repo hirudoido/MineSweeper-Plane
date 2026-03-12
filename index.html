@@ -158,6 +158,7 @@ height: 6px;
   cursor: pointer;
   font-weight: bold;
   text-align:center;
+  position: relative;
 
 }
 
@@ -175,6 +176,17 @@ height: 6px;
   width: 45%;          /* 2列に収める */
   text-align: center;
 }
+.ruleTag {
+  position: absolute;
+  right: 15px;   /* 右からの距離 */
+  bottom: 0px;  /* 下からの距離 */
+  font-size: 0.85em;
+  opacity: 0.9;
+  white-space: nowrap;
+  pointer-events: none; /* クリック邪魔しない */
+}
+
+
 .cell.Superlonglong-text {
       transform: scale(0.75);
   transform-origin: center;
@@ -481,11 +493,13 @@ height: 140%;
           <option value="distanceProduct">距離の積</option>
           <option value="NearestTwoProduct">2点からの距離</option>
           <option value="Perimeter">外周長</option>
+          <option value="ScanFourDirection">4方向の監視</option>
           <option value="VerticalBiasDiff">上下の差</option>
           <option value="HorizontalBiasDiff">左右の差</option>
           <option value="Orderliness">秩序</option>
           <option value="NeighborAverage">周りの平均値</option>
           <option value="Median">周りの中央値</option>
+          <option value="CompositeCell">10種ランダム</option>
           
         </optgroup>
         <optgroup label="数多の表示">
@@ -546,6 +560,10 @@ height: 140%;
     <option value="standard">標準</option>
     <option value="genre">ジャンル</option>
     <option value="difficulty">難易度</option>
+    <option value="beginner">初心者</option>
+    <option value="intermediate">中級者</option>
+    <option value="advanced">上級者</option>
+    <option value="RandomItem">ランダムの一覧</option>
   </select>
 </label>
 

@@ -140,15 +140,16 @@ const numberGroups = {
     items: [
       "total","qmark","HalfMineReveal","fuzzy","colorDiff","ColorWeight","ClusterQuantity",
       "mod3","mod10","Percent","EvenOdd","Odd","prime","PrimeOnly",
-      "distanceSum","distanceProduct","NearestTwoProduct","NeighborAverage",
-      "Median"
+      "distanceSum","distanceProduct","NearestTwoProduct","Perimeter","ScanFourDirection","VerticalBiasDiff","HorizontalBiasDiff","Orderliness","NeighborAverage",
+      "Median","CompositeCell"
     ]
   },
   multi: {
     label: "数多の表示",
     items: [
       "colorSplit","cluster","clusterMazMin","range3","decompose",
-      "TruthLie","VerticalSplit","HorizontalSplit","ManhattanVector"
+      "TruthLie","CompositeComplex","ScanRatioinfluence","ScanVerticalRatio","VerticalSplit","HorizontalSplit",
+      "BiasDiff","ManhattanVector"
     ]
   },
   mathematics: {
@@ -206,6 +207,12 @@ const numberGroups = {
     items: [
       "qmark","HalfMineReveal","colorDiff","mod3","Percent","distanceSum","NeighborAverage","range3","ManhattanVector","Median"
     ]
+  },
+  random:{
+        label: "ランダム項目",
+        items: [
+          "CompositeCell","total","fuzzy","colorDiff","ColorWeight","ClusterQuantity","mod3","NearestTwoProduct","Perimeter","VerticalBiasDiff","HorizontalBiasDiff"
+        ]
   }
 
 };
@@ -292,9 +299,14 @@ const numberJP = {
   distanceSum: "距離の合計",
   distanceProduct: "距離の積",
   NearestTwoProduct: "2点からの距離",
+  Perimeter: "外周長",
+  ScanFourDirection: "4方向の監視",
+  VerticalBiasDiff: "上下の差",
+  HorizontalBiasDiff: "左右の差",
+  Orderliness: "秩序",
   NeighborAverage: "周りの平均値",
   Median:"周りの中央値",
-
+  CompositeCell:"10種ランダム",
   // 数多
   colorSplit: "色別",
   cluster: "固まり",
@@ -302,26 +314,42 @@ const numberJP = {
   range3: "3区間まとめ表示",
   decompose: "分解",
   TruthLie: "真偽",
+  CompositeComplex: "複合",
+  ScanRatioinfluence: "左右の監視",
+  ScanVerticalRatio: "上下の監視",
   VerticalSplit: "上下",
   HorizontalSplit: "左右",
+  BiasDiff: "上下左右の差",
   ManhattanVector: "縦横の距離"
 };
 const placementOrder = {
     standard: ["basic", "limit"],
   genre:     ["Prohibited", "lump","Equal","unique"], // ジャンル順
-  difficulty:  ["Beginner", "Intermediate", "Advanced"]
+  difficulty:  ["Beginner", "Intermediate", "Advanced"],
+  beginner:  ["Beginner"],
+  intermediate:  ["Intermediate"],
+  advanced:  ["Advanced"],
+  RandomItem: ["basic", "limit"],
 }
 // 並び替えプリセット（optgroup の順番）
 const exploreOrder = {
   standard: ["basic", "special", "immutable"],
   genre:    ["square", "rectangle", "chess","eccentric"], // ジャンル順
-  difficulty:["Beginner", "Intermediate", "Advanced"]// 難易度順（例）
+  difficulty:["Beginner", "Intermediate", "Advanced"],// 難易度順（例）
+    beginner:  ["Beginner"],
+  intermediate:  ["Intermediate"],
+  advanced:  ["Advanced"],
+  RandomItem: ["basic", "special", "immutable"],
 };
 
 const numberOrder = {
   standard: ["basic", "multi"],
   genre:    ["mathematics", "distance", "statistics","colors","lumps","unique"],
-  difficulty:  ["Beginner", "Intermediate", "Advanced"]// 必要なら変更
+  difficulty:  ["Beginner","Intermediate", "Advanced" ],// 必要なら変更
+    beginner:  ["Beginner"],
+  intermediate:  ["Intermediate"],
+  advanced:  ["Advanced"],
+  RandomItem: ["random"],
 };
 function rebuildSelect(selectId, groups, order, dictJP) {
   const sel = document.getElementById(selectId);

@@ -104,6 +104,9 @@ class Cell {
     this.flag = false;
     this.value = 0;
     this.el = null;
+    
+    this.displayRule = null;
+
   }
 }
 
@@ -215,6 +218,11 @@ async init() {
 
   document.getElementById("errorMsg").classList.add("hidden");
 
+
+  // ★ ここでセルごとの表示ルールを割り当てる
+  this.assignDisplayRules(rng);
+
+
   this._calculateNumbers();
   this._buildBoardUI();
   this._updateHUD();
@@ -243,6 +251,14 @@ async init() {
       this.timer = null;
     }
   }
+ assignDisplayRules(rng) {
+  const rules = [1,2,3,4,5,6,7,8,9,10]; // ← テスト用に2つだけ
+
+  for (const cell of this.board.cells) {
+    const idx = Math.floor(rng() * rules.length);
+    cell.displayRule = rules[idx];
+  }
+}
     // --- ヒント適用 ---
 _applyHints(rng) {
   const hintRate = +document.getElementById("hintRate").value;
@@ -468,7 +484,7 @@ if (cell.open) {
 
 
 // 除外ルール
-const skip = ["cluster", "VerticalSplit", "HorizontalSplit","ManhattanVector","BiasDiff"];
+const skip = ["cluster", "VerticalSplit", "HorizontalSplit","ManhattanVector","BiasDiff","CompositeCell"];
 
 // 除外ルールならフォント調整しない
 if (true) {
@@ -644,8 +660,13 @@ console.log("startGame params:", rows, cols, mines, placementKey, exploreKey, nu
 
   const placement = new placementMap[placementKey]();
   const explore   = new exploreMap[exploreKey]();
-  const number    = new numberMap[numberKey](explore);
-
+  //ルール集大成
+  let number;
+if (numberKey === "CompositeCell") {
+    number = new CompositeCellRule(explore);
+} else {
+    number = new numberMap[numberKey](explore);
+}
 
   if (seedOverride !== null) {
     document.getElementById("seed").value = seedOverride;
@@ -653,6 +674,7 @@ console.log("startGame params:", rows, cols, mines, placementKey, exploreKey, nu
   const seed = document.getElementById("seed").value;
 
   currentGame = new Game(rows, cols, mines, { placement, explore, number });
+  console.log(mines);
   await currentGame.init(seed);
 
   drawManager.init();
@@ -680,32 +702,34 @@ document.getElementById("startRandom").addEventListener("click", () => {
 //ルールもランダム
 
 document.getElementById("startRandomRule").addEventListener("click", () => {
-  // 配置ルールをランダム選択
-  const placementKeys = Object.keys(placementMap);
 
-  const randomPlacement = placementKeys[Math.floor(Math.random() * placementKeys.length)];
+  // ▼ 1. placement を現在の select からランダム選択
+  const placementSel = document.getElementById("placement");
+  const placementOpts = Array.from(placementSel.querySelectorAll("option"));
+  const randomPlacement = placementOpts[Math.floor(Math.random() * placementOpts.length)].value;
+  placementSel.value = randomPlacement;
 
-  document.getElementById("placement").value = randomPlacement;
+  // ▼ 2. explore を現在の select からランダム選択（Global は除外）
+  const exploreSel = document.getElementById("explore");
+  const exploreOpts = Array.from(exploreSel.querySelectorAll("option"))
+    .filter(opt => opt.value !== "Global");
+  const randomExplore = exploreOpts[Math.floor(Math.random() * exploreOpts.length)].value;
+  exploreSel.value = randomExplore;
 
-  // 探索ルールをランダム選択
-  const exploreKeys = Object.keys(exploreMap).filter(k => k !== "Global");
-;
-  const randomExplore = exploreKeys[Math.floor(Math.random() * exploreKeys.length)];
-  document.getElementById("explore").value = randomExplore;
+  // ▼ 3. number を現在の select からランダム選択
+  const numberSel = document.getElementById("number");
+  const numberOpts = Array.from(numberSel.querySelectorAll("option"));
+  const randomNumber = numberOpts[Math.floor(Math.random() * numberOpts.length)].value;
+  numberSel.value = randomNumber;
 
-
-  // 表示ルールをランダム選択
-  const numberKeys = Object.keys(numberMap);
-  const randomNumber = numberKeys[Math.floor(Math.random() * numberKeys.length)];
-  document.getElementById("number").value = randomNumber;
-
-  // シードもランダムにする
+  // ▼ 4. シードもランダム
   const newSeed = Math.floor(Math.random() * 1e9).toString();
   document.getElementById("seed").value = newSeed;
 
-  // ゲーム開始
+  // ▼ 5. ゲーム開始
   startGame(newSeed);
 });
+
 // リトライ処理
 function setupRetryButtons() {
   document.getElementById("retrySame").addEventListener("click", () => {
