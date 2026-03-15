@@ -141,7 +141,7 @@ const numberGroups = {
       "total","qmark","HalfMineReveal","fuzzy","colorDiff","ColorWeight","ClusterQuantity",
       "mod3","mod10","Percent","EvenOdd","Odd","prime","PrimeOnly",
       "distanceSum","distanceProduct","NearestTwoProduct","Perimeter","ScanFourDirection","VerticalBiasDiff","HorizontalBiasDiff","Orderliness","NeighborAverage",
-      "Median","CompositeCell"
+      "Median","CompositeCell","CompositeCell2"
     ]
   },
   multi: {
@@ -211,7 +211,7 @@ const numberGroups = {
   random:{
         label: "ランダム項目",
         items: [
-          "CompositeCell","total","fuzzy","colorDiff","ColorWeight","ClusterQuantity","mod3","NearestTwoProduct","Perimeter","VerticalBiasDiff","HorizontalBiasDiff"
+          "CompositeCell2","CompositeCell","total","fuzzy","colorDiff","ColorWeight","ClusterQuantity","mod3","NearestTwoProduct","Perimeter","VerticalBiasDiff","HorizontalBiasDiff"
         ]
   }
 
@@ -307,6 +307,7 @@ const numberJP = {
   NeighborAverage: "周りの平均値",
   Median:"周りの中央値",
   CompositeCell:"10種ランダム",
+  CompositeCell2:"2種ランダム",
   // 数多
   colorSplit: "色別",
   cluster: "固まり",

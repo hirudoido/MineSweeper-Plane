@@ -251,13 +251,31 @@ async init() {
       this.timer = null;
     }
   }
- assignDisplayRules(rng) {
-  const rules = [1,2,3,4,5,6,7,8,9,10]; // ← テスト用に2つだけ
+assignDisplayRules(rng) {
+  // 1〜10 のルールID
+  const allRules = [1,2,3,4,5,6,7,8,9,10];
+  let Number=document.getElementById("number").value 
+  if (Number === "CompositeCell2") {
 
-  for (const cell of this.board.cells) {
-    const idx = Math.floor(rng() * rules.length);
-    cell.displayRule = rules[idx];
+  const allRules = [2,3,4,5,6,7,8,9,10];
+    const selected = [];
+  while (selected.length < 2) {
+    const r = allRules[Math.floor(rng() * allRules.length)];
+    if (!selected.includes(r)) selected.push(r);
   }
+
+  // ★ 盤面の各セルにランダムでどちらかを割り当てる
+  for (const cell of this.board.cells) {
+    const idx = Math.floor(rng() * selected.length);
+    cell.displayRule = selected[idx];
+  }
+  }else{
+  for (const cell of this.board.cells) {
+    const idx = Math.floor(rng() * allRules.length);
+    cell.displayRule = allRules[idx];
+  }
+  }
+
 }
     // --- ヒント適用 ---
 _applyHints(rng) {
@@ -484,7 +502,7 @@ if (cell.open) {
 
 
 // 除外ルール
-const skip = ["cluster", "VerticalSplit", "HorizontalSplit","ManhattanVector","BiasDiff","CompositeCell"];
+const skip = ["cluster", "VerticalSplit", "HorizontalSplit","ManhattanVector","BiasDiff","CompositeCell","CompositeCell2"];
 
 // 除外ルールならフォント調整しない
 if (true) {
@@ -662,8 +680,9 @@ console.log("startGame params:", rows, cols, mines, placementKey, exploreKey, nu
   const explore   = new exploreMap[exploreKey]();
   //ルール集大成
   let number;
-if (numberKey === "CompositeCell") {
+if (numberKey === "CompositeCell"||numberKey === "CompositeCell2") {
     number = new CompositeCellRule(explore);
+    console.log(number,numberKey);
 } else {
     number = new numberMap[numberKey](explore);
 }
