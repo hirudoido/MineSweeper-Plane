@@ -252,30 +252,35 @@ async init() {
     }
   }
 assignDisplayRules(rng) {
-  // 1〜10 のルールID
-  const allRules = [1,2,3,4,5,6,7,8,9,10];
-  let Number=document.getElementById("number").value 
-  if (Number === "CompositeCell2") {
+  const number = document.getElementById("number").value;
 
-  const allRules = [2,3,4,5,6,7,8,9,10];
-    const selected = [];
-  while (selected.length < 2) {
+  // ★ ルール候補を決める
+  let allRules;
+  if (number === "CompositeCell2") {
+    allRules = [2,3,4,5,6,7,8,9,10]; // 1 を除外
+  } else {
+    allRules = [1,2,3,4,5,6,7,8,9,10]; // 全部
+  }
+
+  // ★ 選ぶ個数を決める
+  let pickCount = 10;
+  if (number === "CompositeCell2") pickCount = 2;
+  if (number === "CompositeCell5") pickCount = 5;
+
+  // ★ ランダムに pickCount 個だけ選ぶ
+  const selected = [];
+  while (selected.length < pickCount) {
     const r = allRules[Math.floor(rng() * allRules.length)];
     if (!selected.includes(r)) selected.push(r);
   }
 
-  // ★ 盤面の各セルにランダムでどちらかを割り当てる
+  console.log("今回選ばれたルール:", selected);
+
+  // ★ 盤面の各セルにランダムで割り当てる
   for (const cell of this.board.cells) {
     const idx = Math.floor(rng() * selected.length);
     cell.displayRule = selected[idx];
   }
-  }else{
-  for (const cell of this.board.cells) {
-    const idx = Math.floor(rng() * allRules.length);
-    cell.displayRule = allRules[idx];
-  }
-  }
-
 }
     // --- ヒント適用 ---
 _applyHints(rng) {
@@ -502,7 +507,7 @@ if (cell.open) {
 
 
 // 除外ルール
-const skip = ["cluster", "VerticalSplit", "HorizontalSplit","ManhattanVector","BiasDiff","CompositeCell","CompositeCell2"];
+const skip = ["cluster", "VerticalSplit", "HorizontalSplit","ManhattanVector","BiasDiff","CompositeCell","CompositeCell2","CompositeCell5"];
 
 // 除外ルールならフォント調整しない
 if (true) {
@@ -680,7 +685,8 @@ console.log("startGame params:", rows, cols, mines, placementKey, exploreKey, nu
   const explore   = new exploreMap[exploreKey]();
   //ルール集大成
   let number;
-if (numberKey === "CompositeCell"||numberKey === "CompositeCell2") {
+if (numberKey === "CompositeCell"||numberKey === "CompositeCell2"
+||numberKey === "CompositeCell5") {
     number = new CompositeCellRule(explore);
     console.log(number,numberKey);
 } else {
