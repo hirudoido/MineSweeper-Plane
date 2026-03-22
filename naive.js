@@ -1787,6 +1787,631 @@ class SigmaLinePlacement extends PlacementStrategy {
     return false;
   }
 }
+
+// ノイズ構造物
+class NoiseStructurePlacement extends PlacementStrategy {
+
+  place(board, mineCount, rng) {
+    const rows = board.rows;
+    const cols = board.cols;
+
+    // 盤面初期化
+    for (const cell of board.cells) {
+      cell.mine = false;
+    }
+
+    // --- 構造物の目標数（全体の20%） ---
+    const structureTarget = Math.floor(mineCount * 0.40);
+    let placed = 0;
+
+    // --- 構造物を順番に配置（超えたら止める） ---
+    placed += this._placeMiniBlocks(board, structureTarget - placed, rng);
+    placed += this._placeLShapes(board, structureTarget - placed, rng);
+    placed += this._placeLines(board, structureTarget - placed, rng);
+    placed += this._placeTriangles(board, structureTarget - placed, rng);
+
+    // --- 残りはノイズで埋める ---
+    while (placed < mineCount) {
+      const r = Math.floor(rng() * rows);
+      const c = Math.floor(rng() * cols);
+      const cell = board.getCell(r, c);
+      if (!cell.mine) {
+        cell.mine = true;
+        placed++;
+      }
+    }
+
+
+  }
+
+  // =========================
+  //  構造物①：ミニ四角（2×2）
+  // =========================
+  _placeMiniBlocks(board, target, rng) {
+    let placed = 0;
+    const rows = board.rows;
+    const cols = board.cols;
+
+    for (let i = 0; i < 20 && placed < target; i++) {
+      const r = Math.floor(rng() * (rows - 1));
+      const c = Math.floor(rng() * (cols - 1));
+
+      const cells = [
+        board.getCell(r, c),
+        board.getCell(r + 1, c),
+        board.getCell(r, c + 1),
+        board.getCell(r + 1, c + 1),
+      ];
+
+      for (const cell of cells) {
+        if (placed >= target) break;
+        if (!cell.mine) {
+          cell.mine = true;
+          placed++;
+        }
+      }
+    }
+    return placed;
+  }
+
+  // =========================
+  //  構造物②：L字
+  // =========================
+  _placeLShapes(board, target, rng) {
+    let placed = 0;
+    const rows = board.rows;
+    const cols = board.cols;
+
+    const shapes = [
+      [[0,0],[1,0],[1,1]],
+      [[0,0],[0,1],[1,1]],
+      [[0,1],[1,1],[1,0]],
+      [[1,0],[0,0],[0,1]],
+    ];
+
+    for (let i = 0; i < 20 && placed < target; i++) {
+      const r = Math.floor(rng() * (rows - 1));
+      const c = Math.floor(rng() * (cols - 1));
+
+      const shape = shapes[Math.floor(rng() * shapes.length)];
+
+      for (const [dr, dc] of shape) {
+        if (placed >= target) break;
+        const cell = board.getCell(r + dr, c + dc);
+        if (!cell.mine) {
+          cell.mine = true;
+          placed++;
+        }
+      }
+    }
+    return placed;
+  }
+
+  // =========================
+  //  構造物③：直線（縦 or 横）
+  // =========================
+  _placeLines(board, target, rng) {
+    let placed = 0;
+    const rows = board.rows;
+    const cols = board.cols;
+
+    for (let i = 0; i < 20 && placed < target; i++) {
+      const len = 3 + Math.floor(rng() * 5); // 3〜7
+      const vertical = rng() < 0.5;
+
+      if (vertical) {
+        const c = Math.floor(rng() * cols);
+        const start = Math.floor(rng() * (rows - len));
+        for (let r = start; r < start + len && placed < target; r++) {
+          const cell = board.getCell(r, c);
+          if (!cell.mine) {
+            cell.mine = true;
+            placed++;
+          }
+        }
+      } else {
+        const r = Math.floor(rng() * rows);
+        const start = Math.floor(rng() * (cols - len));
+        for (let c = start; c < start + len && placed < target; c++) {
+          const cell = board.getCell(r, c);
+          if (!cell.mine) {
+            cell.mine = true;
+            placed++;
+          }
+        }
+      }
+    }
+    return placed;
+  }
+
+  // =========================
+  //  構造物④：三角形
+  // =========================
+  _placeTriangles(board, target, rng) {
+    let placed = 0;
+    const rows = board.rows;
+    const cols = board.cols;
+
+    for (let i = 0; i < 20 && placed < target; i++) {
+      const r = Math.floor(rng() * (rows - 2));
+      const c = Math.floor(rng() * (cols - 2));
+
+      const cells = [
+        board.getCell(r, c + 1),
+        board.getCell(r + 1, c),
+        board.getCell(r + 1, c + 1),
+        board.getCell(r + 1, c + 2),
+      ];
+
+      for (const cell of cells) {
+        if (placed >= target) break;
+        if (!cell.mine) {
+          cell.mine = true;
+          placed++;
+        }
+      }
+    }
+    return placed;
+  }
+}
+//複製禁止
+class UniqueShapePlacement extends PlacementStrategy {
+
+  place(board, mineCount, rng) {
+    const rows = board.rows;
+    const cols = board.cols;
+
+    // 盤面初期化
+    for (const cell of board.cells) {
+      cell.mine = false;
+    }
+
+    // --- 形の生成（基本形 → 回転反転 → 正規化 → 重複排除） ---
+    const baseShapes = this._getBaseShapes();
+    let shapes = [];
+
+    for (const shape of baseShapes) {
+      const variants = this._generateVariants(shape);
+      shapes.push(...variants);
+    }
+
+    // 正規化して重複排除
+    shapes = this._uniqueShapes(shapes);
+
+    // ★ ここで一度だけシャッフル（重要）
+    shapes = this._shuffle(shapes, rng);
+
+    // 大きい順に並べる（同サイズはランダム）
+    shapes.sort((a, b) => b.length - a.length);
+
+    let placed = 0;
+
+    // --- 形を順番に置く ---
+    for (const shape of shapes) {
+
+      if (placed >= mineCount) break;
+
+      // 置いたら mineCount を超える形はスキップ
+      if (placed + shape.length > mineCount) continue;
+
+      // すでに同じ形が盤面にあるならスキップ
+      if (this._shapeExists(board, shape)) continue;
+
+      // ランダム位置に置けるか試す
+      const count = this._tryPlaceShape(board, shape, rng);
+
+      if (count > 0) {
+        placed += count;
+      }
+    }
+
+    // --- ミニ形で補完（端数だけ） ---
+    let miniShapes = this._getMiniShapes();
+  // ★ ここで一度だけシャッフル（重要）
+    miniShapes = this._shuffle(miniShapes, rng);
+    for (const shape of miniShapes) {
+      if (placed >= mineCount) break;
+
+      if (placed + shape.length > mineCount) continue;
+
+      const count = this._tryPlaceShape(board, shape, rng);
+      if (count > 0) placed += count;
+    }
+
+    // --- 最後に mineCount までノイズで調整（単発は最小限） ---
+    const cells = board.cells;
+    while (placed < mineCount) {
+      const cell = cells[Math.floor(rng() * cells.length)];
+      if (!cell.mine) {
+        cell.mine = true;
+        placed++;
+      }
+    }
+  }
+
+  // ============================================================
+  // 基本形（5マス中心・負の座標を除去）
+  // ============================================================
+  _getBaseShapes() {
+    return [
+
+      // L
+      [[0,0],[1,0],[2,0],[2,1],[2,2]],
+
+      // Y
+      [[0,1],[1,1],[2,1],[2,0],[2,2]],
+
+      // T
+      [[0,0],[0,1],[0,2],[1,1],[2,1]],
+
+      // U
+      [[0,0],[0,2],[1,0],[1,1],[1,2]],
+
+      // V
+      [[0,0],[1,0],[2,0],[2,1],[2,2]],
+
+      // W
+      [[0,0],[1,0],[1,1],[2,1],[2,2]],
+
+      // Z（5マス版）
+      [[0,0],[0,1],[1,1],[1,2],[2,2]],
+
+      // F
+      [[0,1],[1,0],[1,1],[1,2],[2,2]],
+
+      // P
+      [[0,0],[0,1],[1,0],[1,1],[1,2]],
+    ];
+  }
+
+  // ============================================================
+  // ミニ形（補完用）
+  // ============================================================
+  _getMiniShapes() {
+    return [
+      [[1,0],[1,1],[0,1],[0,2]], // S字
+      [[0,0],[0,1],[1,1],[1,2]], // Z字
+      [[0,0],[1,0],[0,1],[1,1]],  // 2×2
+      [[0,1],[1,0],[1,1],[1,2]],// 小三角
+      [[1,0],[0,1],[1,1],[2,1]],// ひし形
+      [[0,0],[0,1],[0,2],[0,3]],// 直線4（横）
+      [[0,0],[1,0],[2,0],[3,0]],// 直線4（縦）
+      [[0,0],[0,1],[0,2]],  // 3マス横
+      [[0,0],[1,0],[2,0]],  // 3マス縦
+      [[0,0],[1,0],[1,1]],  // 小L字
+      [[0,0],[0,1]],        // 2マス横
+      [[0,0],[1,0]],        // 2マス縦
+    ];
+  }
+
+  // ============================================================
+  // 回転・反転バリエーション生成
+  // ============================================================
+  _generateVariants(shape) {
+    const variants = new Set();
+
+    const rotate = (cells) => cells.map(([r,c]) => [c, -r]);
+    const flipH  = (cells) => cells.map(([r,c]) => [r, -c]);
+
+    let current = shape;
+
+    for (let i = 0; i < 4; i++) {
+      current = rotate(current);
+      variants.add(JSON.stringify(this._normalize(current)));
+
+      const flipped = flipH(current);
+      variants.add(JSON.stringify(this._normalize(flipped)));
+    }
+
+    return [...variants].map(s => JSON.parse(s));
+  }
+
+  // ============================================================
+  // 正規化（左上を (0,0) に揃える）
+  // ============================================================
+  _normalize(cells) {
+    const minR = Math.min(...cells.map(c => c[0]));
+    const minC = Math.min(...cells.map(c => c[1]));
+    return cells.map(([r,c]) => [r - minR, c - minC]).sort();
+  }
+
+  // ============================================================
+  // 重複形の排除
+  // ============================================================
+  _uniqueShapes(shapes) {
+    const set = new Set(shapes.map(s => JSON.stringify(s)));
+    return [...set].map(s => JSON.parse(s));
+  }
+
+  // ============================================================
+  // 形が盤面に存在するかチェック
+  // ============================================================
+  _shapeExists(board, shape) {
+    const rows = board.rows;
+    const cols = board.cols;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+
+        let match = true;
+
+        for (const [dr, dc] of shape) {
+          const cell = board.getCell(r + dr, c + dc);
+          if (!cell || !cell.mine) {
+            match = false;
+            break;
+          }
+        }
+
+        if (match) return true;
+      }
+    }
+
+    return false;
+  }
+
+  // ============================================================
+  // 縦横だけ隣接禁止チェック
+  // ============================================================
+  _isAreaFreeOrthogonal(board, r, c, shape) {
+    const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+
+    for (const [dr, dc] of shape) {
+      const rr = r + dr;
+      const cc = c + dc;
+
+      for (const [ar, ac] of dirs) {
+        const cell = board.getCell(rr + ar, cc + ac);
+        if (cell && cell.mine) return false;
+      }
+    }
+    return true;
+  }
+
+  // ============================================================
+  // 配列シャッフル
+  // ============================================================
+  _shuffle(array, rng) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  // ============================================================
+  // 形を置く（置けなければ0）
+  // ============================================================
+_tryPlaceShape(board, shape, rng) {
+  const rows = board.rows;
+  const cols = board.cols;
+
+  for (let i = 0; i < 30; i++) {
+
+    // ★ 端を完全に禁止（1〜rows-2 の範囲でランダム）
+    const r = 1 + Math.floor(rng() * (rows - 3));
+    const c = 1 + Math.floor(rng() * (cols - 3));
+
+    // 置けるかチェック
+    let ok = true;
+
+    for (const [dr, dc] of shape) {
+      const cell = board.getCell(r + dr, c + dc);
+      if (!cell || cell.mine) {
+        ok = false;
+        break;
+      }
+    }
+
+    if (!ok) continue;
+
+    // 隣接禁止チェック（縦横のみ）
+    if (!this._isAreaFreeOrthogonal(board, r, c, shape)) continue;
+
+    // 置く
+    for (const [dr, dc] of shape) {
+      board.getCell(r + dr, c + dc).mine = true;
+    }
+
+    return shape.length;
+  }
+
+  return 0;
+}
+}
+//各行に最低1マス必要
+class RowConnectedPlacement extends PlacementStrategy {
+
+  place(board, mineCount, rng) {
+    const rows = board.rows;
+    const cols = board.cols;
+
+    // 盤面初期化
+    for (const cell of board.cells) {
+      cell.mine = false;
+    }
+
+    // 各行に最低1マス必要
+    const minRequired = rows;
+    if (mineCount < minRequired) {
+      console.warn("地雷数が行数より少ないため、ルールを満たせません");
+      return;
+    }
+
+    // 残りをランダム配分
+    let remaining = mineCount - rows;
+
+    // 各行のブロック長を決める
+    const blockLengths = Array(rows).fill(1);
+
+    // ランダムに追加配分
+    while (remaining > 0) {
+      const r = Math.floor(rng() * rows);
+      if (blockLengths[r] < cols) {
+        blockLengths[r]++;
+        remaining--;
+      }
+    }
+
+    // 各行に連結ブロックを配置
+    for (let r = 0; r < rows; r++) {
+      const len = blockLengths[r];
+
+      // 端もOKなので 0〜cols-len の範囲でランダム
+      const start = Math.floor(rng() * (cols - len + 1));
+
+      for (let c = start; c < start + len; c++) {
+        board.getCell(r, c).mine = true;
+      }
+    }
+  }
+}
+//各行に最低3x3
+
+class RowConnectedWith3x3Placement extends PlacementStrategy {
+
+  place(board, mineCount, rng, excludeIndex = -1) {
+
+    const rows = board.rows;
+    const cols = board.cols;
+
+    const MAX_RETRY = 50;
+
+    for (let attempt = 0; attempt < MAX_RETRY; attempt++) {
+
+      // 盤面初期化
+      for (const cell of board.cells) cell.mine = false;
+
+      // ① ランダム配置
+      const all = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (r * cols + c === excludeIndex) continue;
+          all.push([r, c]);
+        }
+      }
+
+      // シャッフル
+      for (let i = all.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [all[i], all[j]] = [all[j], all[i]];
+      }
+
+      // mineCount 個を置く
+      for (let i = 0; i < mineCount; i++) {
+        const [r, c] = all[i];
+        board.getCell(r, c).mine = true;
+      }
+
+      // ② カバー率計算（固定）
+      const coverScore = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+
+          let score = 0;
+
+          for (let sr = r - 2; sr <= r; sr++) {
+            for (let sc = c - 2; sc <= c; sc++) {
+
+              if (sr < 0 || sc < 0) continue;
+              if (sr + 2 >= rows || sc + 2 >= cols) continue;
+
+              score++;
+            }
+          }
+
+          coverScore[r][c] = score;
+        }
+      }
+
+      // ③ 空白3×3チェック
+      const is3x3Empty = (sr, sc) => {
+        for (let r = sr; r < sr + 3; r++) {
+          for (let c = sc; c < sc + 3; c++) {
+            if (board.getCell(r, c).mine) return false;
+          }
+        }
+        return true;
+      };
+
+      // ★ 空白3×3 のリストを作る
+      const queue = [];
+
+      for (let sr = 0; sr <= rows - 3; sr++) {
+        for (let sc = 0; sc <= cols - 3; sc++) {
+          if (is3x3Empty(sr, sc)) {
+            queue.push([sr, sc]);
+          }
+        }
+      }
+
+      // ④ 空白がある限り処理
+      while (queue.length > 0) {
+
+        const [sr, sc] = queue.shift();
+
+        // すでに埋まっていたらスキップ
+        if (!is3x3Empty(sr, sc)) continue;
+
+        // この3×3内で最もカバー率が高いマス
+        let best = null;
+
+        for (let r = sr; r < sr + 3; r++) {
+          for (let c = sc; c < sc + 3; c++) {
+            const score = coverScore[r][c];
+            if (!best || score > best.score) {
+              best = { r, c, score };
+            }
+          }
+        }
+
+        // 盤面の中で最も価値の低い地雷
+        let worst = null;
+
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            if (!board.getCell(r, c).mine) continue;
+
+            const score = coverScore[r][c];
+            if (!worst || score < worst.score) {
+              worst = { r, c, score };
+            }
+          }
+        }
+
+        // 置き換え
+        board.getCell(best.r, best.c).mine = true;
+        board.getCell(worst.r, worst.c).mine = false;
+
+        // ★ 置き換えた周辺の3×3だけ再チェック
+        for (let rr = best.r - 2; rr <= best.r; rr++) {
+          for (let cc = best.c - 2; cc <= best.c; cc++) {
+            if (rr < 0 || cc < 0) continue;
+            if (rr + 2 >= rows || cc + 2 >= cols) continue;
+            if (is3x3Empty(rr, cc)) queue.push([rr, cc]);
+          }
+        }
+      }
+
+      // ⑤ 最終チェック
+      let ok = true;
+      for (let sr = 0; sr <= rows - 3; sr++) {
+        for (let sc = 0; sc <= cols - 3; sc++) {
+          if (is3x3Empty(sr, sc)) {
+            ok = false;
+            break;
+          }
+        }
+        if (!ok) break;
+      }
+
+      if (ok) return;
+    }
+
+    console.warn("RowConnectedWith3x3Placement: リトライ上限に達しました");
+  }
+}
 //探索範囲  の実装
 // 8方向探索（標準マインスイーパー）
 class Normal8Explore extends ExploreStrategy {
@@ -4450,6 +5075,10 @@ FractalIslands:FractalIslandsPlacement,
 Chaos12:Chaos12Placement,
 SigmaCluster:SigmaClusterPlacement,
 SigmaLine:SigmaLinePlacement,
+NoiseStructure:NoiseStructurePlacement,
+UniqueShape:UniqueShapePlacement,
+RowConnected:RowConnectedPlacement,
+RowConnectedWith3x3:RowConnectedWith3x3Placement,
 
 };
 

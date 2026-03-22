@@ -20,52 +20,74 @@ window.addEventListener("DOMContentLoaded", () => {
 // 地雷数をルールに合わせて補正する
 function normalizeMinesForRule(rows, cols, mines, placementKey) {
   console.log(`normalizeMinesForRule: ${rows}x${cols}, mines=${mines}, rule=${placementKey}`);
+
   // ★ 3連続配置 3の倍数に丸める
   if (placementKey === "ThreeInRow") {
-  return Math.round(mines /3) * 3;
+    return Math.round(mines / 3) * 3;
   }
 
-  //4分割 4の倍数に丸める
-if (placementKey==="QuadrantEqual"||placementKey==="Cluster4Isolated"||placementKey==="TetrisMino") {
-document.getElementById("rows").value=(Math.round(rows /2) * 2);
-document.getElementById("cols").value=(Math.round(cols /2) * 2);
-console.log(Math.round(mines /4) * 4);
+  // 4分割 4の倍数に丸める
+  if (placementKey === "QuadrantEqual" || placementKey === "Cluster4Isolated" || placementKey === "TetrisMino") {
+    document.getElementById("rows").value = (Math.round(rows / 2) * 2);
+    document.getElementById("cols").value = (Math.round(cols / 2) * 2);
+    return Math.round(mines / 4) * 4;
+  }
 
-  return Math.round(mines /4) * 4;
-}
   // 正方形の場合は行数(=列数)の倍数に丸める
-  if (rows === cols&&placementKey === "rowcolfixed"||placementKey === "bridge") {
+  if ((rows === cols && placementKey === "rowcolfixed") || placementKey === "bridge") {
     return Math.round(mines / rows) * rows;
   }
- // 行数または列数の倍数に丸める
-  if (placementKey === "rowcolfixed"||placementKey === "bridge") {
- 
-  const rowMultiple = Math.round(mines / rows) * rows;
-  const colMultiple = Math.round(mines / cols) * cols;
 
-  return (Math.abs(rowMultiple - mines) < Math.abs(colMultiple - mines))
-    ? rowMultiple : colMultiple}
-    // ★ シグマ固まりルール：地雷数を三角数に丸める
-if (placementKey === "SigmaCluster"||placementKey === "SigmaLine") {
-  let k = Math.floor((Math.sqrt(8 * mines + 1) - 1) / 2);
-  return k * (k + 1) / 2; // 下側の三角数
+  // 行数または列数の倍数に丸める
+  if (placementKey === "rowcolfixed" || placementKey === "bridge") {
+    const rowMultiple = Math.round(mines / rows) * rows;
+    const colMultiple = Math.round(mines / cols) * cols;
+    return (Math.abs(rowMultiple - mines) < Math.abs(colMultiple - mines))
+      ? rowMultiple : colMultiple;
+  }
+
+  // ★ シグマ固まりルール：地雷数を三角数に丸める
+  if (placementKey === "SigmaCluster" || placementKey === "SigmaLine") {
+    let k = Math.floor((Math.sqrt(8 * mines + 1) - 1) / 2);
+    return k * (k + 1) / 2;
+  }
+
+  // ★ RowConnected：最低限「行数」必要
+  if (placementKey === "RowConnected") {
+    return Math.max(mines, rows);
+  }
+
+  // ★ NEW：RowConnected + スライド3×3空白禁止
+  // ★ RowConnected + スライド3×3空白禁止
+if (placementKey === "RowConnectedWith3x3") {
+
+  // 3×3 スライド式を満たすための最低地雷数
+  // rows, cols が 10×10 の場合は 16 が最小級
+  const minFor3x3 = Math.ceil(rows / 3) * Math.ceil(cols / 3);
+
+  // RowConnected の最低値（行数）
+  const minForRows = rows;
+
+  // 最低限必要な地雷数
+  const required = Math.max(minFor3x3, minForRows);
+
+  return Math.max(mines, required);
 }
+
   // --- 面積ベースの上限処理 ---
   const area = rows * cols;
   let maxMines;
+
   switch (placementKey) {
     case "NoTouch": // 隣接禁止
       maxMines = Math.ceil(rows / 2) * Math.ceil(cols / 2);
       break;
     default: // 通常
-      maxMines = Math.floor(area * 0.9); // 50%を上限
-      //console.log(`maxMines: ${maxMines}`);
+      maxMines = Math.floor(area * 0.9);
       break;
   }
 
-  // 上限を超えたら丸める
   return Math.min(mines, maxMines);
-
 }
 
 /**

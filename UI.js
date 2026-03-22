@@ -225,11 +225,13 @@ const placementJP = {
   FractalIslands:"フラクタル島",
   noDiagonal:"斜め禁止",
   noOrthogonal:"縦横禁止",
+  UniqueShape:"複製禁止",
   noThree:"3連禁止",
   Path:"道",
   NoIsolated:"孤立禁止",
   Continent:"大陸",
   Lightning:"稲妻",
+  NoiseStructure:"構造物",
   SpiderWeb:"蜘蛛の巣",
 //"制限設置
   pair:"ペア",
@@ -243,6 +245,7 @@ const placementJP = {
   TetrisMino:"テトリスミノ",
   SigmaCluster:"シグマ固まり",
   SigmaLine:"シグマ直線",
+  RowConnected:"行連結",
 }
 const exploreJP = {
   normal8: "8方向(3×3)",
