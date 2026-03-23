@@ -2,60 +2,64 @@ const placementGroups = {
    basic: {
     label: "基本設置",
     items: [
-      "random","ReducedLuck","Chaos12","cluster","FractalIslands",
-      "noDiagonal","noOrthogonal","noThree","Path","NoIsolated","Continent",
-      "Lightning","SpiderWeb"
+     "random","ReducedLuck","Chaos12","cluster","FractalIslands","noDiagonal","noOrthogonal","UniqueShape","noThree","Path","NoIsolated","Continent","Lightning","NoiseStructure","SpiderWeb",
+
     ]
   },
   limit: {
     label: "制限設置",
     items: [
-      "pair","rowcolfixed","bridge","ThreeInRow","QuadrantEqual","ColorBalanced",
-      "NoTouch","Cluster4Isolated","TetrisMino","SigmaCluster","SigmaLine"
+      "pair","rowcolfixed","bridge","ThreeInRow","QuadrantEqual","RowConnectedWith3x3","ColorBalanced","NoTouch","Cluster4Isolated","TetrisMino","SigmaCluster","SigmaLine","RowConnected",
+
     ]
   },
   Prohibited: {
     label: "禁止設置",
     items: [
-      "ReducedLuck","noDiagonal","noOrthogonal","noThree","NoIsolated"
+      "ReducedLuck","noDiagonal","noOrthogonal","noThree","UniqueShape","NoIsolated",
+
     ]
   },
   lump: {
     label: "固まり設置",
     items: [
-     "Path","Chaos12","cluster","FractalIslands","NoIsolated","Continent","Lightning","SpiderWeb","Cluster4Isolated"
-     ,"TetrisMino","SigmaCluster","SigmaLine"
+"Continent","Path","cluster","FractalIslands","NoIsolated","Cluster4Isolated","TetrisMino","SigmaCluster","SigmaLine",
+
     ]
   },
   Equal: {
-    label: "等分設置",
+    label: "規則設置",
     items: [
-"pair","rowcolfixed","bridge","QuadrantEqual","ColorBalanced","ThreeInRow"
+"rowcolfixed","bridge","RowConnected","ThreeInRow","QuadrantEqual","ColorBalanced","pair","RowConnectedWith3x3","SigmaLine",
+
     ]
   },
   unique: {
-    label: "一意設置",
+    label: "外見設置",
     items: [
-      "NoTouch","random"
+     "Lightning","SpiderWeb","NoiseStructure",
+
     ]
   },
   Beginner: {
     label: "初心者向け",
     items: [
-      "NoTouch","random","ReducedLuck","noThree","QuadrantEqual","ColorBalanced"
+      "NoTouch","random","RowConnected","ReducedLuck","QuadrantEqual","ColorBalanced","Cluster4Isolated","pair"
+
     ]
   },
   Intermediate: {
     label: "中級者向け",
     items: [
-      "Chaos12","noDiagonal","noOrthogonal","NoIsolated","Continent","pair","rowcolfixed","ThreeInRow",
-      "TetrisMino","SigmaLine"
+      "Chaos12","NoiseStructure","noDiagonal","noOrthogonal","UniqueShape","NoIsolated","Continent","rowcolfixed","ThreeInRow","TetrisMino","SigmaLine","RowConnectedWith3x3",
+
     ]
   },
   Advanced: {
     label: "上級者向け",
     items: [
-      "cluster","FractalIslands","Path","Lightning","SpiderWeb","bridge","Cluster4Isolated","SigmaCluster"
+      "cluster","FractalIslands","Path","Lightning","SpiderWeb","bridge","SigmaCluster",
+
     ]
   }
 
@@ -138,74 +142,90 @@ const numberGroups = {
   basic: {
     label: "基本表示",
     items: [
-      "total","qmark","HalfMineReveal","fuzzy","colorDiff","ColorWeight","ClusterQuantity",
-      "mod3","mod10","Percent","EvenOdd","Odd","prime","PrimeOnly",
-      "distanceSum","distanceProduct","NearestTwoProduct","Perimeter","ScanFourDirection","VerticalBiasDiff","HorizontalBiasDiff","Orderliness","NeighborAverage",
-      "Median","CompositeCell","CompositeCell5","CompositeCell2"
+      "total","qmark","HalfMineReveal","fuzzy","colorDiff","ColorWeight","ClusterQuantity","mod3","mod10","Percent","EvenOdd","Odd","prime","PrimeOnly","distanceSum","distanceProduct","NearestTwoProduct","Perimeter","ScanFourDirection","VerticalBiasDiff","HorizontalBiasDiff","Orderliness","NeighborAverage","Median","CompositeCell","CompositeCell5","CompositeCell2"
+
     ]
   },
   multi: {
-    label: "数多の表示",
+    label: "数多表示",
     items: [
-      "colorSplit","cluster","clusterMazMin","range3","decompose",
-      "TruthLie","CompositeComplex","ScanRatioinfluence","ScanVerticalRatio","VerticalSplit","HorizontalSplit",
-      "BiasDiff","ManhattanVector"
+     "colorSplit","cluster","clusterMazMin","range3","decompose","TruthLie","CompositeComplex","ScanRatioinfluence","ScanVerticalRatio","VerticalSplit","HorizontalSplit","BiasDiff","ManhattanVector","ManhattanBiasDiff"
+
     ]
   },
   mathematics: {
-    label: "数学の表示",
+    label: "数学表示",
     items: [
-      "total","mod3","mod10","Percent","EvenOdd","Odd",
-      "prime","PrimeOnly","decompose",
+      "total","mod3","mod10","Percent","EvenOdd","Odd","prime","PrimeOnly","decompose","CompositeComplex","Orderliness"
+
     ]
   },
   distance: {
-    label: "距離の表示",
+    label: "距離表示",
     items: [
-      "distanceSum","distanceProduct","NearestTwoProduct","ManhattanVector"
+      "distanceSum","distanceProduct","NearestTwoProduct","ManhattanVector","ManhattanBiasDiff",
+
     ]
   },
   statistics: {
-    label: "統計の表示",
+    label: "統計表示",
     items: [
       "NeighborAverage","Median"
     ]
   },
   colors: {
-    label: "色の表示",
+    label: "色表示",
     items: [
       "colorSplit","colorDiff","ColorWeight"
     ]
   },
   lumps: {
-    label: "固まりの表示",
+    label: "固まり表示",
     items: [
-      "cluster","clusterMazMin","ClusterQuantity"
+      "cluster","clusterMazMin","ClusterQuantity","Perimeter"
+
     ]
   },
   unique: {
     label: "個性的な表示",
     items: [
-      "qmark","HalfMineReveal","fuzzy","range3","TruthLie","VerticalSplit","HorizontalSplit"
+      "qmark","HalfMineReveal","fuzzy","range3","TruthLie","CompositeCell","CompositeCell5","CompositeCell2",
+
+    ]
+  },
+  position: {
+    label: "位置表示",
+    items: [
+      "VerticalSplit","HorizontalSplit","ScanRatioinfluence","ScanVerticalRatio","VerticalBiasDiff","HorizontalBiasDiff","BiasDiff","ScanFourDirection",
+
+    ]
+  },
+  difference: {
+    label: "差分表示",
+    items: [
+      "colorDiff","VerticalBiasDiff","HorizontalBiasDiff","BiasDiff","ManhattanBiasDiff",
+
     ]
   },
   Beginner: {
     label: "初心者向け",
     items: [
-      "colorSplit","cluster","total","VerticalSplit","HorizontalSplit"
+      "total","colorSplit","cluster","VerticalSplit","HorizontalSplit","mod10",
+
     ]
   },
   Intermediate: {
     label: "中級者向け",
     items: [
-      "fuzzy","ColorWeight","ClusterQuantity","mod10","EvenOdd","Odd","prime","PrimeOnly",
-      "distanceProduct","NearestTwoProduct","clusterMazMin","decompose","TruthLie"
+  "fuzzy","ColorWeight","ClusterQuantity","clusterMazMin","Percent","EvenOdd","Odd","prime","PrimeOnly","distanceProduct","NearestTwoProduct","Perimeter","ScanFourDirection","CompositeComplex","decompose","TruthLie","ManhattanVector","CompositeCell2",
+
     ]
   },
   Advanced: {
     label: "上級者向け",
     items: [
-      "qmark","HalfMineReveal","colorDiff","mod3","Percent","distanceSum","NeighborAverage","range3","ManhattanVector","Median"
+      "qmark","HalfMineReveal","colorDiff","VerticalBiasDiff","HorizontalBiasDiff","BiasDiff","ManhattanBiasDiff","ScanRatioinfluence","ScanVerticalRatio","mod3","Percent","range3","Orderliness","CompositeCell5","CompositeCell","NeighborAverage","Median",
+
     ]
   },
   random:{
@@ -239,6 +259,7 @@ const placementJP = {
   bridge:"ブリッジ",
   ThreeInRow:"3連のみ",
   QuadrantEqual:"4分割",
+  RowConnectedWith3x3:"3x3接続",
   ColorBalanced:"色ごと",
   NoTouch:"ぼっち",
   Cluster4Isolated:"4近傍孤立",
@@ -325,7 +346,8 @@ const numberJP = {
   VerticalSplit: "上下",
   HorizontalSplit: "左右",
   BiasDiff: "上下左右の差",
-  ManhattanVector: "縦横の距離"
+  ManhattanVector: "縦横の距離",
+  ManhattanBiasDiff:"縦横の差"
 };
 const placementOrder = {
     standard: ["basic", "limit"],
@@ -349,7 +371,7 @@ const exploreOrder = {
 
 const numberOrder = {
   standard: ["basic", "multi"],
-  genre:    ["mathematics", "distance", "statistics","colors","lumps","unique"],
+  genre:    ["mathematics", "distance", "statistics","colors","lumps","position","difference","unique"],
   difficulty:  ["Beginner","Intermediate", "Advanced" ],// 必要なら変更
     beginner:  ["Beginner"],
   intermediate:  ["Intermediate"],

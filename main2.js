@@ -529,7 +529,7 @@ if (cell.open) {
 
 
 // 除外ルール
-const skip = ["cluster", "VerticalSplit", "HorizontalSplit","ManhattanVector","BiasDiff","CompositeCell","CompositeCell2","CompositeCell5"];
+const skip = ["cluster", "VerticalSplit", "HorizontalSplit","ManhattanVector","BiasDiff","CompositeCell","CompositeCell2","CompositeCell5","ManhattanBiasDiff"];
 
 // 除外ルールならフォント調整しない
 if (true) {

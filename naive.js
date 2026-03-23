@@ -5049,6 +5049,73 @@ case 10: {
   return cell.value === 0;
 }
 }
+//距離の差
+class ManhattanBiasDiffRule extends NumberRule {
+  constructor(explore) {
+    super();
+    this.explore = explore;
+  }
+
+  calculate(cell, neighbors) {
+    if (cell.mine) {
+      cell.displayValue = "💣";
+      return "💣";
+    }
+
+    if (!neighbors || neighbors.length === 0) {
+      cell.displayValue = "";
+      return "";
+    }
+
+    let sumDx = 0;
+    let sumDy = 0;
+    let mineCount = 0;
+
+    for (const nb of neighbors) {
+      if (!nb.mine) continue;
+
+      mineCount++;
+      sumDx += Math.abs(nb.c - cell.c);
+      sumDy += Math.abs(nb.r - cell.r);
+    }
+
+    // ★ 地雷が1つもない → 空白
+    if (mineCount === 0) {
+      cell.displayValue = "";
+      return "";
+    }
+
+    // 差
+    const diff = Math.abs(sumDx - sumDy);
+
+    // 方向ラベル
+    let label = "";
+    if (sumDx > sumDy) {
+      label = "左右";
+    } else if (sumDy > sumDx) {
+      label = "上下";
+    } else {
+      label = "同じ";
+    }
+
+    // ★ diff が 0 でも必ず表示する
+    cell.displayValue = `${diff}<br>${label}`;
+
+    return diff;
+  }
+
+  render(cell) {
+    if (cell.mine) return "💣";
+    return cell.displayValue ?? "";
+  }
+
+isZero(cell) {
+  if (cell.mine) return false;
+
+  // 地雷ゼロのときだけ true
+  return cell.displayValue === "";
+}
+}
 // ====== ★ここでマップを定義 ======
 const placementMap = {
   random: RandomPlacement,
@@ -5157,6 +5224,7 @@ ScanRatioinfluence:ScanRatioinfluenceRule,
 ScanVerticalRatio:ScanVerticalRatioRule,
 ScanFourDirection:ScanFourDirectionRule,
 CompositeCell:CompositeCellRule,
+ManhattanBiasDiff:ManhattanBiasDiffRule,
 
 
 };
