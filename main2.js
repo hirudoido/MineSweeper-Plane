@@ -203,6 +203,7 @@ class Game {
     this.number = number;
     this.opened = 0;
     this.gameOver = false;
+    this.life = +document.getElementById("lifeSet").value;
     this.timer = null;
     this.elapsed = 0;
   }
@@ -457,6 +458,15 @@ _updateHUD() {
   document.getElementById("uncertain").textContent = uncertain; // ★追加
   document.getElementById("size").textContent =
     `${this.board.rows}×${this.board.cols} 地雷${this.mineCount}`;
+
+  // ★ ライフ表示
+  if (isNaN(this.life)){
+    document.getElementById("life").textContent = "∞"; 
+  }else{
+    document.getElementById("life").textContent = `${this.life}`; //this.life;
+    
+  }
+
 }
 
     // --- 数字計算 ---
@@ -561,11 +571,25 @@ openCell(cell) {
   this.paintCell(cell);
 
   if (cell.mine) {
+  this.life--;
+
+  this._updateHUD(); // ライフ更新
+
+  if (this.life <= 0) {
+    // ★ ライフが尽きた → ゲームオーバー
     this.gameOver = true;
     this.stopTimer();
     document.getElementById("gameover").classList.remove("hidden");
-    return;
+  } else {
+    // ★ ライフが残っている → 続行
+    // 盤面はそのまま、セルは開いたまま
+    // 演出を入れたいならここに書く
+
   }
+
+  return;
+}
+
   // 数字セル
   if (this.number.isZero(cell)) {
     this.floodOpen(cell);
@@ -582,11 +606,15 @@ openCell(cell) {
 }
 
 _checkWin() {
-  // 開いたセル数 = 全セル数 - 地雷数
-  const totalSafe = this.board.rows * this.board.cols - this.mineCount;
-  const opened = this.board.cells.filter(c => c.open).length;
-  return opened >= totalSafe;
+  // 地雷以外のセルだけを数える
+  const totalSafe = this.board.cells.filter(c => !c.mine).length;
+
+  // 開いたセルのうち、地雷以外だけを数える
+  const openedSafe = this.board.cells.filter(c => c.open && !c.mine).length;
+
+  return openedSafe >= totalSafe;
 }
+
 
 
 
