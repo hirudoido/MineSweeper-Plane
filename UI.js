@@ -61,7 +61,18 @@ const placementGroups = {
       "cluster","FractalIslands","Path","Lightning","SpiderWeb","bridge","SigmaCluster",
 
     ]
+  },
+  householdOne:{
+    label: "1世代",
+    items:["random","cluster","noDiagonal","noOrthogonal","noThree","Path","NoIsolated","Continent","SpiderWeb","Lightning","pair","rowcolfixed","bridge","ColorBalanced","ThreeInRow","QuadrantEqual","TetrisMino"
+,]
+  },
+  householdTwo:{
+    label: "2世代",
+    items:["ReducedLuck","Chaos12","FractalIslands","UniqueShape","NoiseStructure","RowConnectedWith3x3","Cluster4Isolated","SigmaCluster","SigmaLine","RowConnected"
+,]
   }
+
 
 
 }
@@ -134,6 +145,18 @@ const exploreGroups = {
     items: [
       "big49","colorAxis","colorAxisDiagonal","Diamond3","ExpandUntil2MinesTriangle","RippleChain",
       "DiamondMineCount","StraightLine","clusterDetect","RippleImmutable","RandomBlindSpot","CrossBlindSpot","Global"
+    ]
+  },
+  householdOne:{
+    label: "1世代",
+    items:["normal8","big25","knight","queen","Cross1","Cross2","colorAxis","colorAxisDiagonal","Ring","Diamond2","Global","untilMine","expandUntilMine","ExpandUntil2MinesTriangle","RippleChain","Ripple","SquareMineCount"
+
+    ]
+  },
+  householdTwo:{
+    label: "2世代",
+    items:["big49","Normal8torus","UntilMine5x5","Diamond3","StraightLine","RippleImmutable","UntilMine5x5Immutable","RandomBlindSpot","CrossBlindSpot"
+
     ]
   }
 
@@ -233,7 +256,19 @@ const numberGroups = {
         items: [
           "CompositeCell2","CompositeCell5","CompositeCell","total","fuzzy","colorDiff","ColorWeight","ClusterQuantity","mod3","NearestTwoProduct","Perimeter","VerticalBiasDiff","HorizontalBiasDiff"
         ]
-  }
+  },
+    householdOne:{
+        label: "1世代",
+        items: ["total","qmark","fuzzy","colorDiff","ColorWeight","colorSplit","cluster","clusterMazMin","ClusterQuantity","mod3","mod10","range3","decompose","distanceSum","distanceProduct","NearestTwoProduct","TruthLie"
+
+        ]
+    },
+    householdTwo:{
+        label: "2世代",
+        items:["HalfMineReveal","Percent","EvenOdd","Odd","prime","PrimeOnly","Perimeter","ScanFourDirection","VerticalBiasDiff","HorizontalBiasDiff","Orderliness","Median","CompositeComplex","ScanRatioinfluence","ScanVerticalRatio","VerticalSplit","HorizontalSplit"
+
+        ]
+    }
 
 };
 const placementJP = {
@@ -353,6 +388,7 @@ const placementOrder = {
     standard: ["basic", "limit"],
   genre:     ["Prohibited", "lump","Equal","unique"], // ジャンル順
   difficulty:  ["Beginner", "Intermediate", "Advanced"],
+  generation:["householdOne","householdTwo"],
   beginner:  ["Beginner"],
   intermediate:  ["Intermediate"],
   advanced:  ["Advanced"],
@@ -362,6 +398,7 @@ const placementOrder = {
 const exploreOrder = {
   standard: ["basic", "special", "immutable"],
   genre:    ["square", "rectangle", "chess","eccentric"], // ジャンル順
+    generation:["householdOne","householdTwo"],
   difficulty:["Beginner", "Intermediate", "Advanced"],// 難易度順（例）
     beginner:  ["Beginner"],
   intermediate:  ["Intermediate"],
@@ -372,6 +409,7 @@ const exploreOrder = {
 const numberOrder = {
   standard: ["basic", "multi"],
   genre:    ["mathematics", "distance", "statistics","colors","lumps","position","difference","unique"],
+    generation:["householdOne","householdTwo"],
   difficulty:  ["Beginner","Intermediate", "Advanced" ],// 必要なら変更
     beginner:  ["Beginner"],
   intermediate:  ["Intermediate"],

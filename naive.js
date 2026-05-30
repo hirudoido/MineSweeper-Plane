@@ -3964,6 +3964,8 @@ class PrimeOnlyNumberRule extends NumberRule {
     }
   }
 }
+// 周囲の地雷数を百分率で表示周りの平均値
+
 class PercentNumberRule extends NumberRule {
   calculate(cell, neighbors) {
     // 周囲の地雷数
