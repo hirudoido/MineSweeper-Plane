@@ -401,6 +401,9 @@ height: 140%;
       <label >配置
         <select id="placement">
           <optgroup label="基本設置">
+            <option value="MaximumDistance">最大距離制限</option>
+            <option value="RangeDistance">距離制限</option>
+            <option value="IceCrack">氷裂</option>
             <option value="random">ランダム</option>
             <option value="ReducedLuck">運排除</option>
             <option value="Chaos12">運のみ</option>
@@ -438,6 +441,8 @@ height: 140%;
       <label >探索
         <select id="explore">
           <optgroup label="基本探索">
+            <option value="FourLeafSearch">四つ葉</option>
+            <option value="Straightpenetration">ルーク</option>
             <option value="normal8">8方向(3×3)</option>
             <option value="big25">8方向(5×5)</option>
             <option value="big49">8方向(7×7)</option>
@@ -479,6 +484,10 @@ height: 140%;
       <label >表示
         <select id="number">
           <optgroup label="基本表示">
+            <option value="MostCharacteristicShapeLabel">カテゴリ分類</option>
+            <option value="MinMaxDistance">大小距離(マンハッタン)</option>
+            <option value="MinMaxEuclidDistance">大小距離(ユークリッド)</option>
+
           <option value="total">総数</option>
           <option value="qmark">上位クエスチョン</option>
           <option value="HalfMineReveal">下限クエスチョン</option>

@@ -80,6 +80,8 @@ if (placementKey === "RowConnectedWith3x3") {
 
   switch (placementKey) {
     case "NoTouch": // 隣接禁止
+    case"MaximumDistance": 
+    case"RangeDistance":
       maxMines = Math.ceil(rows / 2) * Math.ceil(cols / 2);
       break;
     default: // 通常
@@ -179,18 +181,20 @@ class NumberRule {
   }
 
   // ★ 追加：数字セル判定（全ルール共通）
-  isNumberCell(cell) {
-    if (cell.mine) return false;
+isNumberCell(cell) {
+  if (cell.mine) return false;
 
-    // ゼロセルは数字扱いしない
-    if (this.isZero(cell)) return false;
+  // ラベルセルは数字扱いしない
+  if (cell.isLabel) return false;
 
-    // 空文字は数字扱いしない
-    if (cell.value === "") return false;
+  // ゼロセルは数字扱いしない
+  if (this.isZero(cell)) return false;
 
-    // 文字列でも数値でもOK
-    return true;
-  }
+  // 空文字は数字扱いしない
+  if (cell.value === "") return false;
+
+  return true;
+}
 }
 // ====== ゲーム進行管理 ======
 // 内側：Gameクラス
@@ -472,6 +476,10 @@ _updateHUD() {
     // --- 数字計算 ---
  // --- 数字計算 ---
 _calculateNumbers() {
+    // ★ 先に trueValue を全セル分計算
+  if (this.number.preCalculate) {
+    this.number.preCalculate(this.board, this.explore);
+  }
   for (const cell of this.board.cells) {
     if (cell.mine) continue;
 
@@ -539,7 +547,8 @@ if (cell.open) {
 
 
 // 除外ルール
-const skip = ["cluster", "VerticalSplit", "HorizontalSplit","ManhattanVector","BiasDiff","CompositeCell","CompositeCell2","CompositeCell5","ManhattanBiasDiff"];
+const skip = ["cluster", "VerticalSplit", "HorizontalSplit","ManhattanVector","BiasDiff","CompositeCell","CompositeCell2","CompositeCell5","ManhattanBiasDiff","MinMaxDistance",
+  ];
 
 // 除外ルールならフォント調整しない
 if (true) {

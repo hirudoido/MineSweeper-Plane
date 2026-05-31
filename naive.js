@@ -2412,6 +2412,223 @@ class RowConnectedWith3x3Placement extends PlacementStrategy {
     console.warn("RowConnectedWith3x3Placement: リトライ上限に達しました");
   }
 }
+// ★ 距離制限
+class MaximumDistancePlacement extends PlacementStrategy {
+  constructor(maxDist = 6) {
+    super();
+    this.maxDist = maxDist; // ★ 最大距離
+  }
+
+  place(board, mineCount, rng, excludeIndex = -1) {
+    const total = board.rows * board.cols;
+    let placed = 0;
+
+    // 盤面リセット
+    for (const cell of board.cells) cell.mine = false;
+
+    let safety = 0;
+    const MAX = 20000;
+
+    while (placed < mineCount) {
+      safety++;
+      if (safety > MAX) {
+        throw new Error("最大距離制限により配置できませんでした");
+      }
+
+      const idx = Math.floor(rng() * total);
+      if (idx === excludeIndex) continue;
+
+      const cell = board.cells[idx];
+      if (cell.mine) continue;
+
+      // ★ 距離制限チェック
+      if (!this._canPlace(board, cell)) continue;
+
+      // 置く
+      cell.mine = true;
+      placed++;
+    }
+  }
+
+  _canPlace(board, cell) {
+    for (const other of board.cells) {
+      if (!other.mine) continue;
+
+      const dx = other.c - cell.c;
+      const dy = other.r - cell.r;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // ★ 離れすぎるとNG
+      if (dist > this.maxDist) {
+        return false;
+      }
+    }
+    return true;
+  }
+}
+// ★ 距離範囲
+class RangeDistancePlacement extends PlacementStrategy {
+  constructor(minDist = 1.5, maxDist = 10) {
+    super();
+    this.minDist = minDist; // ★ 最小距離
+    this.maxDist = maxDist; // ★ 最大距離
+  }
+
+  place(board, mineCount, rng, excludeIndex = -1) {
+    const total = board.rows * board.cols;
+    let placed = 0;
+
+    // 盤面リセット
+    for (const cell of board.cells) cell.mine = false;
+
+    let safety = 0;
+    const MAX = 30000;
+
+    while (placed < mineCount) {
+      safety++;
+      if (safety > MAX) {
+        throw new Error("距離範囲制限により配置できませんでした");
+      }
+
+      const idx = Math.floor(rng() * total);
+      if (idx === excludeIndex) continue;
+
+      const cell = board.cells[idx];
+      if (cell.mine) continue;
+
+      // ★ 距離範囲チェック
+      if (!this._canPlace(board, cell)) continue;
+
+      // 置く
+      cell.mine = true;
+      placed++;
+    }
+  }
+
+  _canPlace(board, cell) {
+    for (const other of board.cells) {
+      if (!other.mine) continue;
+
+      const dx = other.c - cell.c;
+      const dy = other.r - cell.r;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // ★ 近すぎる → NG
+      if (dist < this.minDist) return false;
+
+      // ★ 離れすぎる → NG
+      if (dist > this.maxDist) return false;
+    }
+    return true;
+  }
+}
+// ★ 氷棒
+class IceCrackPlacement extends PlacementStrategy {
+  constructor(crackCount = 3, branchChance = 0.15) {
+    super();
+    this.crackCount = crackCount;
+    this.branchChance = branchChance;
+  }
+
+  place(board, mineCount, rng, excludeIndex = -1) {
+    const total = board.rows * board.cols;
+
+    // リセット
+    for (const c of board.cells) {
+      c.mine = false;
+    }
+
+    // --- ひび割れの開始点を複数選ぶ ---
+    const starts = [];
+    for (let i = 0; i < this.crackCount; i++) {
+      let start = null;
+      for (let tries = 0; tries < 500; tries++) {
+        const idx = Math.floor(rng() * total);
+        if (idx === excludeIndex) continue;
+        const cell = board.cells[idx];
+        if (!cell.mine) {
+          start = cell;
+          break;
+        }
+      }
+      if (!start) throw new Error("開始点が見つからない");
+      starts.push(start);
+    }
+
+    // --- 方向セット ---
+    const dirs = [
+      [-1,0],[1,0],[0,-1],[0,1],
+      [-1,-1],[-1,1],[1,-1],[1,1]
+    ];
+
+    // --- ひび割れを伸ばす ---
+    let placed = 0;
+    const queue = [];
+
+    // 初期ひび割れをキューに入れる
+    for (const s of starts) {
+      s.mine = true;
+      queue.push({ cell: s, lastDir: null });
+      placed++;
+    }
+
+    while (queue.length > 0 && placed < mineCount) {
+      const { cell: cur, lastDir } = queue.shift();
+
+      // --- 分岐 ---
+      if (rng() < this.branchChance) {
+        const branchDirs = dirs.filter(([dr, dc]) => {
+          if (!lastDir) return true;
+          return !(dr === lastDir[0] && dc === lastDir[1]);
+        });
+
+        const [dr, dc] = branchDirs[Math.floor(rng() * branchDirs.length)];
+        const rr = cur.r + dr;
+        const cc = cur.c + dc;
+
+        if (this._inBoard(board, rr, cc)) {
+          const nb = board.getCell(rr, cc);
+          if (!nb.mine) {
+            nb.mine = true;
+            placed++;
+            queue.push({ cell: nb, lastDir: [dr, dc] });
+          }
+        }
+      }
+
+      // --- 通常のひび割れ進行（ジグザグ） ---
+      const candidates = dirs.filter(([dr, dc]) => {
+        if (!lastDir) return true;
+        return !(dr === lastDir[0] && dc === lastDir[1]);
+      });
+
+      const [dr, dc] = candidates[Math.floor(rng() * candidates.length)];
+      const rr = cur.r + dr;
+      const cc = cur.c + dc;
+
+      if (!this._inBoard(board, rr, cc)) continue;
+
+      const nb = board.getCell(rr, cc);
+      if (!nb.mine) {
+        nb.mine = true;
+        placed++;
+        queue.push({ cell: nb, lastDir: [dr, dc] });
+      }
+    }
+
+    // ★★★ 最後に地雷数チェックを追加 ★★★
+    const actual = board.cells.filter(c => c.mine).length;
+    if (actual !== mineCount) {
+      throw new Error(`IceCrackPlacement: 地雷数が一致しません (actual=${actual}, expected=${mineCount})`);
+    }
+  }
+
+  _inBoard(board, r, c) {
+    return r >= 0 && c >= 0 && r < board.rows && c < board.cols;
+  }
+}
+
+
 //探索範囲  の実装
 // 8方向探索（標準マインスイーパー）
 class Normal8Explore extends ExploreStrategy {
@@ -3260,6 +3477,47 @@ class CrossBlindSpotExplore extends ExploreStrategy {
     return out;
   }
 }
+// L字4方向
+class FourLeafSearchExplore extends ExploreStrategy {
+  neighbors(board, r, c) {
+
+    // L字4方向
+    const patterns = [
+      // 上方向のL
+      [-1, -1], [-2, -1], [-1, -2],
+      // 右方向のL
+      [1, 1], [2, 1], [1, 2],
+      // 下方向のL
+   [-1, 1], [-2, 1], [-1, 2],
+      [1, -1], [2, -1], [1, -2],
+    ];
+
+    return patterns
+      .map(([dr, dc]) => [r+dr, c+dc])
+      .filter(([rr, cc]) => rr >= 0 && cc >= 0 && rr < board.rows && cc < board.cols)
+      .map(([rr, cc]) => board.getCell(rr, cc));
+  }
+}
+// 直線通過
+class StraightpenetrationExplore extends ExploreStrategy {
+  neighbors(board, r, c) {
+    const out = [];
+
+
+      // 縦横に端まで
+      // 縦
+      for (let rr = 0; rr < board.rows; rr++) {
+        if (rr !== r) out.push(board.getCell(rr, c));
+      }
+      // 横
+      for (let cc = 0; cc < board.cols; cc++) {
+        if (cc !== c) out.push(board.getCell(r, cc));
+      }
+    
+
+    return out;
+  }
+}
 // ====== 数字ルール実装 ======
 // 総数ルール（標準）
 class TotalNumberRule extends NumberRule {
@@ -3761,31 +4019,34 @@ class TruthLieNumberRule extends NumberRule {
 }
 // 隣接セルの平均値
 class NeighborAverageNumberRule extends NumberRule {
-  calculate(cell, neighbors) {
-    // 通常の真値
-    cell.trueValue = neighbors.filter(nb => nb.mine).length;
 
-    // 探索ルールに従って取得
+  // ★ まず全セルの trueValue を先に計算する
+  preCalculate(board, explore) {
+    for (const cell of board.cells) {
+      const ns = explore.neighbors(board, cell.r, cell.c);
+      cell.trueValue = ns.filter(nb => nb.mine).length;
+    }
+  }
+
+  calculate(cell, neighbors) {
+    // trueValue は preCalculate でセット済み
     const ns = currentGame.explore.neighbors(cell.board, cell.r, cell.c);
 
-    // ★ 地雷が一つもないかどうか
+    // 地雷があるかどうか
     const hasMine = ns.some(nb => nb.mine);
-
-    // ★ safeZone フラグをセット
     cell.safeZone = !hasMine;
 
-    // 地雷→1、数字→trueValue、0は除外
+    // 地雷→1、数字→trueValue
     const valid = ns
       .map(nb => nb.mine ? 1 : nb.trueValue)
-      .filter(v => v !== undefined && v > 0);
+      .filter(v => v > 0);
 
-    // 平均値が無い → 空白
     if (valid.length === 0) {
       cell.displayValue = "";
     } else {
       const sum = valid.reduce((a, v) => a + v, 0);
       const avg = sum / valid.length;
-      cell.displayValue = avg === 0 ? "" : avg.toFixed(1);
+      cell.displayValue = avg.toFixed(1);
     }
 
     return cell.trueValue;
@@ -4197,23 +4458,28 @@ class ClusterQuantityNumberRule extends NumberRule {
 }
 // 隣接中央値ルール
 class MedianNumberRule extends NumberRule {
-  calculate(cell, neighbors) {
-    // 通常の真値（内部用）
-    cell.trueValue = neighbors.filter(nb => nb.mine).length;
 
-    // 探索ルールに従って取得
+  // ★ まず全セルの trueValue を先に計算する
+  preCalculate(board, explore) {
+    for (const cell of board.cells) {
+      const ns = explore.neighbors(board, cell.r, cell.c);
+      cell.trueValue = ns.filter(nb => nb.mine).length;
+    }
+  }
+
+  calculate(cell, neighbors) {
+    // trueValue は preCalculate でセット済み
     const ns = currentGame.explore.neighbors(cell.board, cell.r, cell.c);
 
-    // ★ 地雷が一つもないかどうか
+    // 地雷があるかどうか
     const hasMine = ns.some(nb => nb.mine);
     cell.safeZone = !hasMine;
 
     // 地雷 → 1、数字 → trueValue、0 は除外
     const valid = ns
       .map(nb => nb.mine ? 1 : nb.trueValue)
-      .filter(v => v !== undefined && v > 0);
+      .filter(v => v > 0);
 
-    // ★ valid が空 → 表示なし
     if (valid.length === 0) {
       cell.displayValue = "";
       return cell.trueValue;
@@ -4224,17 +4490,13 @@ class MedianNumberRule extends NumberRule {
     let median;
 
     if (valid.length % 2 === 1) {
-      // 奇数個 → 真ん中
       median = valid[(valid.length - 1) / 2];
     } else {
-      // 偶数個 → 2つの平均
       const mid = valid.length / 2;
       median = (valid[mid - 1] + valid[mid]) / 2;
     }
 
-    // 小数点1桁で表示
     cell.displayValue = median.toFixed(1);
-
     return cell.trueValue;
   }
 
@@ -4242,6 +4504,7 @@ class MedianNumberRule extends NumberRule {
     return cell.displayValue ?? "";
   }
 }
+
 // 半分以上地雷なら数字を表示
 class HalfMineRevealRule extends NumberRule {
   calculate(cell, neighbors) {
@@ -5118,6 +5381,251 @@ isZero(cell) {
   return cell.displayValue === "";
 }
 }
+class MinMaxDistanceRule extends NumberRule {
+  calculate(cell, neighbors) {
+    if (cell.mine) {
+      cell.displayValue = "💣";
+      return "💣";
+    }
+
+    // 探索範囲を取得
+    const ns = currentGame.explore.neighbors(cell.board, cell.r, cell.c);
+
+    // 地雷セルだけ抽出
+    const mines = ns.filter(nb => nb.mine);
+
+    // 地雷が無い → 空白 & safeZone
+    if (mines.length === 0) {
+      cell.safeZone = true;
+      cell.displayValue = "";
+      return 0;
+    }
+
+    cell.safeZone = false;
+
+    // ★ 距離を計算（マンハッタン距離）
+    const dists = mines.map(nb =>
+      Math.abs(nb.r - cell.r) + Math.abs(nb.c - cell.c)
+    );
+
+    const minDist = Math.min(...dists);
+    const maxDist = Math.max(...dists);
+
+    // 表示
+    if (minDist === maxDist) {
+      cell.displayValue = minDist;
+    } else {
+      cell.displayValue = `${minDist},${maxDist}`;
+    }
+
+
+    // trueValue は通常の地雷数
+    cell.trueValue = mines.length;
+    return cell.trueValue;
+  }
+
+  render(cell) {
+    return cell.displayValue ?? "";
+  }
+
+  isZero(cell) {
+    // 地雷ゼロのときだけゼロ扱い
+    return cell.displayValue === "";
+  }
+}
+//距離
+class MinMaxEuclidDistanceRule extends NumberRule {
+
+  calculate(cell, neighbors) {
+    if (cell.mine) {
+      cell.displayValue = "💣";
+      return "💣";
+    }
+
+    // 探索範囲
+    const ns = currentGame.explore.neighbors(cell.board, cell.r, cell.c);
+
+    // 地雷だけ抽出
+    const mines = ns.filter(nb => nb.mine);
+
+    // 地雷ゼロ → 空白
+    if (mines.length === 0) {
+      cell.safeZone = true;
+      cell.displayValue = "";
+      return 0;
+    }
+
+    cell.safeZone = false;
+
+    // ★ 距離を √表記 or 整数で表す
+    const distExprs = mines.map(nb => {
+      const dx = Math.abs(nb.c - cell.c);
+      const dy = Math.abs(nb.r - cell.r);
+      const sq = dx * dx + dy * dy;
+
+      // ★ 完全平方数なら整数にする
+      const root = Math.sqrt(sq);
+      const isInt = Number.isInteger(root);
+
+      return {
+        sq,
+        expr: isInt ? `${root}` : `√${sq}`
+      };
+    });
+
+    // 最小距離（平方値で比較）
+    distExprs.sort((a, b) => a.sq - b.sq);
+
+    const minExpr = distExprs[0].expr;
+    const maxExpr = distExprs[distExprs.length - 1].expr;
+
+    // 表示（上下2段）
+    if (minExpr === maxExpr) {
+      cell.displayValue = minExpr;
+    }else{
+      
+      cell.displayValue = `${minExpr},${maxExpr}`;
+    }
+
+    // trueValue は地雷数
+    cell.trueValue = mines.length;
+    return cell.trueValue;
+  }
+
+  render(cell) {
+    return cell.displayValue ?? "";
+  }
+
+  isZero(cell) {
+    return cell.displayValue === "";
+  }
+}
+//形
+class MostCharacteristicShapeLabelRule extends NumberRule {
+
+
+
+  calculate(cell, neighbors) {
+    const mines = neighbors.filter(n => n.mine);
+
+    // ★ ゼロセルは必ず 0 にする（スキップ発動のため）
+    if (mines.length === 0) {
+      cell.value = 0;
+      cell.isLabel = false;
+      return 0;
+    }
+
+    const r = cell.r;
+    const c = cell.c;
+
+    // === 1. 十字 ===
+    if (
+      this._has(neighbors, r-1, c) &&
+      this._has(neighbors, r+1, c) &&
+      this._has(neighbors, r, c-1) &&
+      this._has(neighbors, r, c+1)
+    ) {
+      return this._setLabel(cell, "╋");
+    }
+
+    // === 2. T字（方向つき） ===
+    const up    = this._has(neighbors, r-1, c);
+    const down  = this._has(neighbors, r+1, c);
+    const left  = this._has(neighbors, r, c-1);
+    const right = this._has(neighbors, r, c+1);
+
+    const countOrth = [up,down,left,right].filter(v => v).length;
+
+    if (countOrth === 3) {
+      if (!up)    return this._setLabel(cell, "┬"); // 下向きT
+      if (!down)  return this._setLabel(cell, "┴"); // 上向きT
+      if (!left)  return this._setLabel(cell, "├"); // 右向きT
+      if (!right) return this._setLabel(cell, "┤"); // 左向きT
+    }
+
+    // === 3. L字（方向つき） ===
+    const cornerPairs = [
+      { cond: up && right,  label: "┐" },
+      { cond: up && left,   label: "┌" },
+      { cond: down && right,label: "┘" },
+      { cond: down && left, label: "└" },
+    ];
+    for (const cp of cornerPairs) {
+      if (cp.cond) return this._setLabel(cell, cp.label);
+    }
+
+    // === 4. 直線 ===
+    const rowMines = mines.filter(m => m.r === r).length;
+    if (rowMines >= 3) return this._setLabel(cell, "―");
+
+    const colMines = mines.filter(m => m.c === c).length;
+    if (colMines >= 3) return this._setLabel(cell, "｜");
+
+    const diag1 = mines.filter(m => (m.r - m.c) === (r - c)).length;
+    if (diag1 >= 3) return this._setLabel(cell, "＼");
+
+    const diag2 = mines.filter(m => (m.r + m.c) === (r + c)).length;
+    if (diag2 >= 3) return this._setLabel(cell, "／");
+
+    // === 5. 面 ===
+    const density = mines.length / neighbors.length;
+    if (density >= 0.4) return this._setLabel(cell, "面");
+
+    // === 6. 複数島 ===
+    const comps = this._connected(neighbors, mines);
+    if (comps.length >= 2) return this._setLabel(cell, "群");
+
+    // === 7. 点 ===
+    if (mines.length === 1) return this._setLabel(cell, "点");
+
+    // デフォルト：島
+    return this._setLabel(cell, "島");
+  }
+
+  _setLabel(cell, str) {
+    cell.value = str;
+    cell.isLabel = true;
+    return str;
+  }
+
+  _has(neighbors, r, c) {
+    return neighbors.some(n => n.r === r && n.c === c && n.mine);
+  }
+
+  _connected(neighbors, mines) {
+    const set = new Set(mines);
+    const visited = new Set();
+    const comps = [];
+
+    for (const m of mines) {
+      if (visited.has(m)) continue;
+      const comp = [];
+      const stack = [m];
+      visited.add(m);
+
+      while (stack.length) {
+        const cur = stack.pop();
+        comp.push(cur);
+        for (let dr=-1; dr<=1; dr++) {
+          for (let dc=-1; dc<=1; dc++) {
+            if (dr===0 && dc===0) continue;
+            const rr = cur.r + dr;
+            const cc = cur.c + dc;
+            const nb = neighbors.find(n => n.r === rr && n.c === cc && n.mine);
+            if (nb && !visited.has(nb)) {
+              visited.add(nb);
+              stack.push(nb);
+            }
+          }
+        }
+      }
+      comps.push(comp);
+    }
+    return comps;
+  }
+}
+
+
 // ====== ★ここでマップを定義 ======
 const placementMap = {
   random: RandomPlacement,
@@ -5148,6 +5656,9 @@ NoiseStructure:NoiseStructurePlacement,
 UniqueShape:UniqueShapePlacement,
 RowConnected:RowConnectedPlacement,
 RowConnectedWith3x3:RowConnectedWith3x3Placement,
+MaximumDistance:MaximumDistancePlacement,
+RangeDistance:RangeDistancePlacement,
+IceCrack:IceCrackPlacement,
 
 };
 
@@ -5181,8 +5692,8 @@ const exploreMap = {
     Normal8torus:Normal8torusExplore,
     RandomBlindSpot:RandomBlindSpotExplore,
     CrossBlindSpot:CrossBlindSpotExplore,
-
-
+    FourLeafSearch:FourLeafSearchExplore,
+Straightpenetration:StraightpenetrationExplore,
     
 
 };
@@ -5227,6 +5738,9 @@ ScanVerticalRatio:ScanVerticalRatioRule,
 ScanFourDirection:ScanFourDirectionRule,
 CompositeCell:CompositeCellRule,
 ManhattanBiasDiff:ManhattanBiasDiffRule,
+MinMaxDistance:MinMaxDistanceRule,
+  MinMaxEuclidDistance:MinMaxEuclidDistanceRule,
+  MostCharacteristicShapeLabel :MostCharacteristicShapeLabelRule ,
 
 
 };
