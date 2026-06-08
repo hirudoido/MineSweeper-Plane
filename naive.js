@@ -5624,6 +5624,47 @@ class MostCharacteristicShapeLabelRule extends NumberRule {
     return comps;
   }
 }
+// 数字セルの重み
+class MineAndNumberWeightRule extends NumberRule {
+  preCalculate(board, explore) {
+    for (const cell of board.cells) {
+      const ns = explore.neighbors(board, cell.r, cell.c);
+      cell.trueValue = ns.filter(nb => nb.mine).length;
+    }
+  }
+  calculate(cell, neighbors) {
+const mines = neighbors.filter(nb => nb.mine);
+
+if (mines.length === 0) {
+  cell.displayValue = "";
+  cell.safeZone = true;
+  return 0;
+}
+    let sum = 0;
+    for (const nb of neighbors) {
+      if (nb.mine) {
+        // 地雷は 1.0
+        sum += 1.0;
+      } else {
+        // 数字セル（trueValue > 0）は 0.5
+        if (nb.trueValue > 0) {
+          sum += 0.5;
+        }
+      }
+    }
+
+    // ★ ゼロセルは必ず 0 を入れる（スキップ発動のため）
+    if (sum === 0) {
+      cell.value = 0;
+      return 0;
+    }
+
+    // 小数1桁に整形
+    const v = Number(sum.toFixed(1));
+    cell.value = v;
+    return v;
+  }
+}
 
 
 // ====== ★ここでマップを定義 ======
@@ -5741,7 +5782,7 @@ ManhattanBiasDiff:ManhattanBiasDiffRule,
 MinMaxDistance:MinMaxDistanceRule,
   MinMaxEuclidDistance:MinMaxEuclidDistanceRule,
   MostCharacteristicShapeLabel :MostCharacteristicShapeLabelRule ,
-
+MineAndNumberWeight :MineAndNumberWeightRule,
 
 };
 
