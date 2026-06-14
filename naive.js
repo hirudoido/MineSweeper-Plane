@@ -3518,6 +3518,777 @@ class StraightpenetrationExplore extends ExploreStrategy {
     return out;
   }
 }
+// 連結地雷成分
+class DensityConnectedExplore extends ExploreStrategy {
+
+  _isDanger(cell) {
+    return cell.mine || cell.trueValue > 0;
+  }
+
+  _getConnectedDanger(board, start) {
+    if (!this._isDanger(start)) return [];
+
+    const visited = new Set();
+    const stack = [start];
+    const out = [];
+
+    while (stack.length) {
+      const cur = stack.pop();
+      if (visited.has(cur)) continue;
+      visited.add(cur);
+      out.push(cur);
+
+      for (const nb of neighbors8(board, cur)) {
+        if (this._isDanger(nb) && !visited.has(nb)) {
+          stack.push(nb);
+        }
+      }
+    }
+    return out;
+  }
+
+  neighbors(board, r, c) {
+    const start = board.getCell(r, c);
+    const out = new Set();
+
+    // --- 1. 最低十字 ---
+    const crossDirs = [
+      [-1, 0], [1, 0], [0, -1], [0, 1],
+    ];
+    const crossCells = [];
+    for (const [dr, dc] of crossDirs) {
+      const rr = ((r + dr) % board.rows + board.rows) % board.rows;
+      const cc = ((c + dc) % board.cols + board.cols) % board.cols;
+      const nb = board.getCell(rr, cc);
+      if (nb) {
+        out.add(nb);
+        crossCells.push(nb);
+      }
+    }
+
+    // --- 2. 連結探索の起点 ---
+    let dangerStart = null;
+    if (this._isDanger(start)) {
+      dangerStart = start;
+    } else {
+      for (const nb of crossCells) {
+        if (this._isDanger(nb)) {
+          dangerStart = nb;
+          break;
+        }
+      }
+    }
+
+    if (!dangerStart) {
+      return Array.from(out);
+    }
+
+    // --- 3. 連結危険成分 ---
+    const connected = this._getConnectedDanger(board, dangerStart);
+    for (const m of connected) out.add(m);
+
+    // --- 4. 密度方向の計算 ---
+    const baseR = dangerStart.r;
+    const baseC = dangerStart.c;
+
+    const dirs = [
+      [-1, 0], [1, 0], [0, -1], [0, 1],
+      [-1,-1],[-1, 1],[1,-1],[1, 1],
+    ];
+
+    const densityMap = new Map();
+    for (const [dr, dc] of dirs) {
+      let count = 0;
+      for (const m of connected) {
+        const rr = m.r - baseR;
+        const cc = m.c - baseC;
+        if (Math.sign(rr) === dr && Math.sign(cc) === dc) {
+          count++;
+        }
+      }
+      densityMap.set(`${dr},${dc}`, count);
+    }
+
+    const threshold = 2;
+    const allowedDirs = dirs.filter(([dr, dc]) =>
+      (densityMap.get(`${dr},${dc}`) || 0) >= threshold
+    );
+
+    // --- 5. 密度の高い方向に伸ばす ---
+    for (const [dr, dc] of allowedDirs) {
+      let rr = baseR + dr*2;
+      let cc = baseC + dc*2;
+
+      while (true) {
+        const nb = board.getCell(rr, cc);
+        if (!nb) break;
+
+        out.add(nb);
+
+        if (nb.mine) {
+          rr += dr;
+          cc += dc;
+        } else {
+          break;
+        }
+      }
+    }
+
+    return Array.from(out);
+  }
+}
+// 半径による探索
+class RadiusByDisplayRuleExplore extends ExploreStrategy {
+
+  neighbors(board, r, c) {
+    const cell = board.getCell(r, c);
+
+    // displayRule を半径として使う
+    let radius = Math.floor((cell.displayRule / 3)+1); // cell.displayRule;
+
+    // displayRule=10 は特別扱い（最大半径 or ランダム）
+
+    const out = [];
+
+    for (let dr = -radius; dr <= radius; dr++) {
+      for (let dc = -radius; dc <= radius; dc++) {
+
+        // ★ 円形条件
+        if (dr*dr + dc*dc > radius*radius) continue;
+
+        const rr = r + dr;
+        const cc = c + dc;
+
+        if (rr < 0 || cc < 0 || rr >= board.rows || cc >= board.cols) continue;
+        if (rr === r && cc === c) continue;
+
+        out.push(board.getCell(rr, cc));
+      }
+    }
+
+    return out;
+  }
+}
+// 将棋用
+class ShogiPieceExplore extends ExploreStrategy {
+
+  neighbors(board, r, c) {
+    const cell = board.getCell(r, c);
+    const rule = cell.displayRule;
+    const out = new Set();
+
+    // 1マス移動の方向
+    const kingDirs = [
+      [-1,0],[1,0],[0,-1],[0,1],
+      [-1,-1],[-1,1],[1,-1],[1,1]
+    ];
+
+    // 金将
+    const goldDirs = [
+      [-1,0],[1,0],[0,-1],[0,1], // 十字
+      [-1,-1],[-1,1]            // 前斜め
+    ];
+
+    // 銀将
+    const silverDirs = [
+      [-1,0],[-1,-1],[-1,1],    // 前3方向
+      [1,-1],[1,1]              // 後ろ斜め
+    ];
+
+    // 角行（斜め無限）
+    const bishopDirs = [
+      [-1,-1],[-1,1],[1,-1],[1,1]
+    ];
+
+    // 飛車（縦横無限）
+    const rookDirs = [
+      [-1,0],[1,0],[0,-1],[0,1]
+    ];
+
+    // --- 駒ごとの処理 ---
+
+    // 金将（1,8,9）
+    if ([1,8,9].includes(rule)) {
+      for (const [dr,dc] of goldDirs) {
+        const nb = this.getCellRaw(board,r+dr, c+dc);
+        if (nb) out.add(nb);
+      }
+    }
+
+    // 銀将（2,10）
+    else if ([2,10].includes(rule)) {
+      for (const [dr,dc] of silverDirs) {
+        const nb = this.getCellRaw(board,r+dr, c+dc);
+        if (nb) out.add(nb);
+      }
+    }
+
+    // 角行（3）
+    else if (rule === 3) {
+      for (const [dr,dc] of bishopDirs) {
+        let rr = r+dr, cc = c+dc;
+        while (true) {
+             const nb = this.getCellRaw(board, rr, cc); // ★ トーラス無効
+          if (!nb) break;
+          out.add(nb);
+          rr += dr; cc += dc;
+        }
+      }
+    }
+
+    // 龍馬（4）＝角行＋十字1マス
+    else if (rule === 4) {
+      // 角行
+      for (const [dr,dc] of bishopDirs) {
+        let rr = r+dr, cc = c+dc;
+        while (true) {
+             const nb = this.getCellRaw(board, rr, cc); // ★ トーラス無効
+          if (!nb) break;
+          out.add(nb);
+          rr += dr; cc += dc;
+        }
+      }
+      // 十字1マス
+      for (const [dr,dc] of rookDirs) {
+        const nb = this.getCellRaw(board,r+dr, c+dc);
+        if (nb) out.add(nb);
+      }
+    }
+
+    // 飛車（5）
+    else if (rule === 5) {
+      for (const [dr,dc] of rookDirs) {
+        let rr = r+dr, cc = c+dc;
+        while (true) {
+          const nb = this.getCellRaw(board,rr, cc);
+          if (!nb) break;
+          out.add(nb);
+          rr += dr; cc += dc;
+        }
+      }
+    }
+
+    // 龍王（6）＝飛車＋斜め1マス
+    else if (rule === 6) {
+      // 飛車
+      for (const [dr,dc] of rookDirs) {
+        let rr = r+dr, cc = c+dc;
+        while (true) {
+          const nb = this.getCellRaw(board,rr, cc);
+          if (!nb) break;
+          out.add(nb);
+          rr += dr; cc += dc;
+        }
+      }
+      // 斜め1マス
+      for (const [dr,dc] of bishopDirs) {
+        const nb = this.getCellRaw(board,r+dr, c+dc);
+        if (nb) out.add(nb);
+      }
+    }
+
+    // 王将（7）
+    else if (rule === 7) {
+      for (const [dr,dc] of kingDirs) {
+        const nb = this.getCellRaw(board,r+dr, c+dc);
+        if (nb) out.add(nb);
+      }
+    }
+
+    return Array.from(out);
+  }
+getCellRaw(board, r, c) {
+  if (r < 0 || c < 0 || r >= board.rows || c >= board.cols) return null;
+  return board.cells[r * board.cols + c];
+}
+
+}
+//チェスの駒
+class ChessPieceExplore extends ExploreStrategy {
+
+  getCellRaw(board, r, c) {
+    if (r < 0 || c < 0 || r >= board.rows || c >= board.cols) return null;
+    return board.getCell(r, c);
+  }
+
+  neighbors(board, r, c) {
+    const cell = board.getCell(r, c);
+    const rule = cell.displayRule;
+    const out = new Set();
+
+    // ナイト
+    const knightMoves = [
+      [-2,-1],[-2,1],[2,-1],[2,1],
+      [-1,-2],[-1,2],[1,-2],[1,2]
+    ];
+
+    // キング（8方向1マス）
+    const kingDirs = [
+      [-1,0],[1,0],[0,-1],[0,1],
+      [-1,-1],[-1,1],[1,-1],[1,1]
+    ];
+
+    // ビショップ（斜め無限）
+    const bishopDirs = [
+      [-1,-1],[-1,1],[1,-1],[1,1]
+    ];
+
+    // ルーク（縦横無限）
+    const rookDirs = [
+      [-1,0],[1,0],[0,-1],[0,1]
+    ];
+
+    // --- 駒ごとの処理 ---
+
+    // ナイト（1,6）
+    if ([1,6].includes(rule)) {
+      for (const [dr,dc] of knightMoves) {
+        const nb = this.getCellRaw(board, r+dr, c+dc);
+        if (nb) out.add(nb);
+      }
+    }
+
+    // ビショップ（2,7）
+    else if ([2,7].includes(rule)) {
+      for (const [dr,dc] of bishopDirs) {
+        let rr = r+dr, cc = c+dc;
+        while (true) {
+          const nb = this.getCellRaw(board, rr, cc);
+          if (!nb) break;
+          out.add(nb);
+          rr += dr; cc += dc;
+        }
+      }
+    }
+
+    // ルーク（3,8）
+    else if ([3,8].includes(rule)) {
+      for (const [dr,dc] of rookDirs) {
+        let rr = r+dr, cc = c+dc;
+        while (true) {
+          const nb = this.getCellRaw(board, rr, cc);
+          if (!nb) break;
+          out.add(nb);
+          rr += dr; cc += dc;
+        }
+      }
+    }
+
+    // クイーン（4,9）
+    else if ([4,9].includes(rule)) {
+      // ビショップ部分
+      for (const [dr,dc] of bishopDirs) {
+        let rr = r+dr, cc = c+dc;
+        while (true) {
+          const nb = this.getCellRaw(board, rr, cc);
+          if (!nb) break;
+          out.add(nb);
+          rr += dr; cc += dc;
+        }
+      }
+      // ルーク部分
+      for (const [dr,dc] of rookDirs) {
+        let rr = r+dr, cc = c+dc;
+        while (true) {
+          const nb = this.getCellRaw(board, rr, cc);
+          if (!nb) break;
+          out.add(nb);
+          rr += dr; cc += dc;
+        }
+      }
+    }
+
+    // キング（5,10）
+    else if ([5,10].includes(rule)) {
+      for (const [dr,dc] of kingDirs) {
+        const nb = this.getCellRaw(board, r+dr, c+dc);
+        if (nb) out.add(nb);
+      }
+    }
+
+    return Array.from(out);
+  }
+}
+//fairyチェスの駒
+class FairyChessExplore extends ExploreStrategy {
+
+  getCellRaw(board, r, c) {
+    if (r < 0 || c < 0 || r >= board.rows || c >= board.cols) return null;
+    return board.getCell(r, c);
+  }
+
+  neighbors(board, r, c) {
+    const cell = board.getCell(r, c);
+    const rule = cell.displayRule;
+    const out = new Set();
+    // 中心十字を除外する関数
+    const isCenterCross = (rr, cc) => {
+      return (rr === r && cc !== c) || (cc === c && rr !== r);
+    };
+    // --- 基本駒 ---
+    const knightMoves = [
+      [-2,-1],[-2,1],[2,-1],[2,1],
+      [-1,-2],[-1,2],[1,-2],[1,2]
+    ];
+
+    const kingDirs = [
+      [-1,0],[1,0],[0,-1],[0,1],
+      [-1,-1],[-1,1],[1,-1],[1,1]
+    ];
+
+    const bishopDirs = [
+      [-1,-1],[-1,1],[1,-1],[1,1]
+    ];
+
+    // 基本
+    const rookDirs = [
+      [-1,0],[1,0],[0,-1],[0,1]
+    ];
+    const diag1 = [[-1,-1],[-1,1],[1,-1],[1,1]];
+    const diag2 = [
+      [-2,-2],[-2,2],[2,-2],[2,2]
+    ];
+    // --- フェアリーチェス駒 ---
+    const lionMoves = [
+      ...kingDirs.map(([dr,dc]) => [dr,dc]),       // 1マス
+      ...kingDirs.map(([dr,dc]) => [dr*2,dc*2])    // 2マス
+    ];
+
+    const shipMoves = [
+      ...knightMoves,
+      ...kingDirs
+    ];
+
+    const eagleMoves = [
+      [3,1],[3,-1],[-3,1],[-3,-1],
+      [1,3],[1,-3],[-1,3],[-1,-3],
+      [2,2],[2,-2],[-2,2],[-2,-2]
+    ];
+
+    const buffaloMoves = [
+      ...knightMoves,
+      [3,1],[3,-1],[-3,1],[-3,-1],
+      [1,3],[1,-3],[-1,3],[-1,-3],
+      [3,2],[3,-2],[-3,2],[-3,-2],
+      [2,3],[2,-3],[-2,3],[-2,-3]
+    ];
+
+    // --- 駒ごとの処理 ---
+
+    // ナイト（1,6）
+    if (rule === 5) {
+      for (const [dr,dc] of knightMoves) {
+        const nb = this.getCellRaw(board, r+dr, c+dc);
+        if (nb) out.add(nb);
+      }
+    }
+
+    // ビショップ（2,7）
+    else if (rule === 1) {
+      for (const [dr,dc] of bishopDirs) {
+        let rr = r+dr, cc = c+dc;
+        while (true) {
+          const nb = this.getCellRaw(board, rr, cc);
+          if (!nb) break;
+          out.add(nb);
+          rr += dr; cc += dc;
+        }
+      }
+    }
+
+    // ルーク（3,8）
+    else if (rule === 2) {
+      for (const [dr,dc] of rookDirs) {
+        let rr = r+dr, cc = c+dc;
+        while (true) {
+          const nb = this.getCellRaw(board, rr, cc);
+          if (!nb) break;
+          out.add(nb);
+          rr += dr; cc += dc;
+        }
+      }
+    }
+
+    // クイーン（4,9）
+    else if (rule === 3) {
+      // ビショップ部分
+      for (const [dr,dc] of bishopDirs) {
+        let rr = r+dr, cc = c+dc;
+        while (true) {
+          const nb = this.getCellRaw(board, rr, cc);
+          if (!nb) break;
+          out.add(nb);
+          rr += dr; cc += dc;
+        }
+      }
+      // ルーク部分
+      for (const [dr,dc] of rookDirs) {
+        let rr = r+dr, cc = c+dc;
+        while (true) {
+          const nb = this.getCellRaw(board, rr, cc);
+          if (!nb) break;
+          out.add(nb);
+          rr += dr; cc += dc;
+        }
+      }
+    }
+
+    // キング（5,10）
+    else if (rule === 4) {
+      for (const [dr,dc] of kingDirs) {
+        const nb = this.getCellRaw(board, r+dr, c+dc);
+        if (nb) out.add(nb);
+      }
+    }
+
+    // ライオン（6）
+  if (rule === 6) {
+      for (let dr = -2; dr <= 2; dr++) {
+        for (let dc = -2; dc <= 2; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nb = this.getCellRaw(board, r+dr, c+dc);
+          if (nb) out.add(nb);
+        }
+      }
+    }
+  // --- 船（7） ---
+    if (rule === 7) {
+      for (const [dr,dc] of diag1) {
+        const baseR = r+dr, baseC = c+dc;
+        const base = this.getCellRaw(board, baseR, baseC);
+        if (!base) continue;
+        out.add(base);
+
+        // 上下に無限
+        for (const vr of [-1,1]) {
+          let rr = baseR + vr, cc = baseC;
+          while (true) {
+            if (isCenterCross(rr, cc)) break; // ★ 中心十字を除外
+            const nb = this.getCellRaw(board, rr, cc);
+            if (!nb) break;
+            out.add(nb);
+            rr += vr;
+          }
+        }
+      }
+    }
+
+    // --- イーグル（8） ---
+    else if (rule === 8) {
+      for (const [dr,dc] of diag1) {
+        const baseR = r+dr, baseC = c+dc;
+        const base = this.getCellRaw(board, baseR, baseC);
+        if (!base) continue;
+        out.add(base);
+
+        // 上下左右に無限
+        const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+        for (const [vr,vc] of dirs) {
+          let rr = baseR + vr, cc = baseC + vc;
+          while (true) {
+            if (isCenterCross(rr, cc)) break; // ★ 中心十字を除外
+            const nb = this.getCellRaw(board, rr, cc);
+            if (!nb) break;
+            out.add(nb);
+            rr += vr; cc += vc;
+          }
+        }
+      }
+    }
+
+    // バッファロー（9）
+    else if (rule === 9) {
+      for (const [dr,dc] of buffaloMoves) {
+        const nb = this.getCellRaw(board, r+dr, c+dc);
+        if (nb) out.add(nb);
+      }
+    }
+
+    // アマゾン（10）
+    else if (rule === 10) {
+      // クイーン部分
+      for (const [dr,dc] of bishopDirs) {
+        let rr = r+dr, cc = c+dc;
+        while (true) {
+          const nb = this.getCellRaw(board, rr, cc);
+          if (!nb) break;
+          out.add(nb);
+          rr += dr; cc += dc;
+        }
+      }
+      for (const [dr,dc] of rookDirs) {
+        let rr = r+dr, cc = c+dc;
+        while (true) {
+          const nb = this.getCellRaw(board, rr, cc);
+          if (!nb) break;
+          out.add(nb);
+          rr += dr; cc += dc;
+        }
+      }
+      // ナイト部分
+      for (const [dr,dc] of knightMoves) {
+        const nb = this.getCellRaw(board, r+dr, c+dc);
+        if (nb) out.add(nb);
+      }
+    }
+
+    return Array.from(out);
+  }
+}
+// --- イーグル ---
+class EagleExplore extends ExploreStrategy {
+
+  getCellRaw(board, r, c) {
+    if (r < 0 || c < 0 || r >= board.rows || c >= board.cols) return null;
+    return board.getCell(r, c);
+  }
+
+  neighbors(board, r, c) {
+    const out = new Set();
+
+    // 斜め1マス
+    const diag1 = [
+      [-1,-1],[-1,1],
+      [1,-1],[1,1]
+    ];
+
+    // 中心十字を除外する判定
+    const isCenterCross = (rr, cc) => {
+      return (rr === r && cc !== c) || (cc === c && rr !== r);
+    };
+
+    for (const [dr,dc] of diag1) {
+      const baseR = r + dr;
+      const baseC = c + dc;
+
+      const base = this.getCellRaw(board, baseR, baseC);
+      if (!base) continue;
+
+      // 斜め1マスは含める
+      out.add(base);
+
+      // 上下左右に無限
+      const dirs = [
+        [-1,0],[1,0],   // 上下
+        [0,-1],[0,1]    // 左右
+      ];
+
+      for (const [vr,vc] of dirs) {
+        let rr = baseR + vr;
+        let cc = baseC + vc;
+
+        while (true) {
+          // ★ 中心十字は絶対に含めない
+          if (isCenterCross(rr, cc)) break;
+
+          const nb = this.getCellRaw(board, rr, cc);
+          if (!nb) break;
+
+          out.add(nb);
+
+          rr += vr;
+          cc += vc;
+        }
+      }
+    }
+
+    return Array.from(out);
+  }
+}
+// --- シップ ---
+class ShipExplore extends ExploreStrategy {
+
+  getCellRaw(board, r, c) {
+    if (r < 0 || c < 0 || r >= board.rows || c >= board.cols) return null;
+    return board.getCell(r, c);
+  }
+
+  neighbors(board, r, c) {
+    const out = new Set();
+
+    // 斜め1マス
+    const diag1 = [
+      [-1,-1],[-1,1],
+      [1,-1],[1,1]
+    ];
+
+    // 中心十字を除外する判定
+    const isCenterCross = (rr, cc) => {
+      return (rr === r && cc !== c) || (cc === c && rr !== r);
+    };
+
+    for (const [dr,dc] of diag1) {
+      const baseR = r + dr;
+      const baseC = c + dc;
+
+      const base = this.getCellRaw(board, baseR, baseC);
+      if (!base) continue;
+
+      // 斜め1マスは含める
+      out.add(base);
+
+      // 上下に無限
+      for (const vr of [-1,1]) {
+        let rr = baseR + vr;
+        let cc = baseC;
+
+        while (true) {
+          // ★ 中心十字は絶対に含めない
+          if (isCenterCross(rr, cc)) break;
+
+          const nb = this.getCellRaw(board, rr, cc);
+          if (!nb) break;
+
+          out.add(nb);
+
+          rr += vr;
+        }
+      }
+    }
+
+    return Array.from(out);
+  }
+}
+// --- ベッフォ ---
+class BuffaloExplore extends ExploreStrategy {
+
+  getCellRaw(board, r, c) {
+    if (r < 0 || c < 0 || r >= board.rows || c >= board.cols) return null;
+    return board.getCell(r, c);
+  }
+
+  neighbors(board, r, c) {
+    const out = new Set();
+
+    // ナイト
+    const knight = [
+      [-2,-1],[-2,1],[2,-1],[2,1],
+      [-1,-2],[-1,2],[1,-2],[1,2]
+    ];
+
+    // キャメル（3,1）
+    const camel = [
+      [-3,-1],[-3,1],[3,-1],[3,1],
+      [-1,-3],[-1,3],[1,-3],[1,3]
+    ];
+
+    // ゼブラ（3,2）
+    const zebra = [
+      [-3,-2],[-3,2],[3,-2],[3,2],
+      [-2,-3],[-2,3],[2,-3],[2,3]
+    ];
+
+    const moves = [...knight, ...camel, ...zebra];
+
+    for (const [dr,dc] of moves) {
+      const nb = this.getCellRaw(board, r+dr, c+dc);
+      if (nb) out.add(nb);
+    }
+
+    return Array.from(out);
+  }
+}
+
 // ====== 数字ルール実装 ======
 // 総数ルール（標準）
 class TotalNumberRule extends NumberRule {
@@ -3696,6 +4467,25 @@ class ClusterNumberRule extends NumberRule {
   isZero(cell) {
     return !cell.value || cell.value.length === 0;
   }
+}
+//圧縮表記
+function compressSequence(arr) {
+  const out = [];
+  let i = 0;
+  while (i < arr.length) {
+    const val = arr[i];
+    let count = 1;
+    while (i + count < arr.length && arr[i + count] === val) {
+      count++;
+    }
+    if (count > 1) {
+      out.push(`${val}×${count}`); // 中央揃えされる
+    } else {
+      out.push(String(val));
+    }
+    i += count;
+  }
+  return out;
 }
 // 固まり数ルール（縦横4方向接続版）MAX,MIN表示
 class ClusterMaxMixNumberRule extends NumberRule {
@@ -5665,6 +6455,36 @@ if (mines.length === 0) {
     return v;
   }
 }
+// 時々？
+class DisplayRuleMystery extends NumberRule {
+
+  calculate(cell, neighbors) {
+    // 周囲の地雷数を数値で返す
+    return neighbors.filter(nb => nb.mine).length;
+  }
+
+  render(cell) {
+    const rule = cell.displayRule;
+
+    // 0 は空白（ただし rule=10 のときは ? にしても良い）
+    if (cell.value === 0) {
+      return "";
+    }
+
+    // 1〜9 → trueValue をそのまま表示
+    if (rule >= 1 && rule <= 9) {
+      return String(cell.value);
+    }
+
+    // 10 → 常に "?"
+    if (rule === 10) {
+      return "?";
+    }
+
+    // 念のためのフォールバック
+    return String(cell.value);
+  }
+}
 
 
 // ====== ★ここでマップを定義 ======
@@ -5735,8 +6555,14 @@ const exploreMap = {
     CrossBlindSpot:CrossBlindSpotExplore,
     FourLeafSearch:FourLeafSearchExplore,
 Straightpenetration:StraightpenetrationExplore,
-    
-
+DensityConnected:DensityConnectedExplore,
+RadiusByDisplay:RadiusByDisplayRuleExplore,
+ShogiPiece:ShogiPieceExplore,
+ChessPiece :ChessPieceExplore,
+FairyChess:FairyChessExplore,
+    Eagle :EagleExplore,
+    Ship:ShipExplore,
+Buffalo:BuffaloExplore,
 };
 
 const numberMap = {
@@ -5783,7 +6609,7 @@ MinMaxDistance:MinMaxDistanceRule,
   MinMaxEuclidDistance:MinMaxEuclidDistanceRule,
   MostCharacteristicShapeLabel :MostCharacteristicShapeLabelRule ,
 MineAndNumberWeight :MineAndNumberWeightRule,
-
+DisplayMystery:DisplayRuleMystery,
 };
 
 

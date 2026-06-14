@@ -98,25 +98,7 @@ if (placementKey === "RowConnectedWith3x3") {
  * @param {Array<number>} arr The sequence of values to compress.
  * @returns {Array<string>} The compressed sequence.
  */
-//圧縮表記
-function compressSequence(arr) {
-  const out = [];
-  let i = 0;
-  while (i < arr.length) {
-    const val = arr[i];
-    let count = 1;
-    while (i + count < arr.length && arr[i + count] === val) {
-      count++;
-    }
-    if (count > 1) {
-      out.push(`${val}×${count}`); // 中央揃えされる
-    } else {
-      out.push(String(val));
-    }
-    i += count;
-  }
-  return out;
-}
+
 // ====== 基本クラス ======
 class Cell {
   constructor(r, c, board) {   // ★ board を引数で受け取る
