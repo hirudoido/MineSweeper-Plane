@@ -471,61 +471,56 @@ class ContinentPlacement extends PlacementStrategy {
   place(board, mineCount, rng, excludeIndex = -1) {
     const total = board.rows * board.cols;
 
+    // --- 盤面リセット ---
+    for (const cell of board.cells) {
+      cell.mine = false;
+    }
+
+    // --- 起点 ---
+    let startIndex;
     while (true) {
-      // 盤面リセット
-      for (const cell of board.cells) {
-        cell.mine = false;
-      }
+      startIndex = Math.floor(rng() * total);
+      if (startIndex !== excludeIndex) break;
+    }
 
-      // ランダム配置
-      let placed = 0;
-      while (placed < mineCount) {
-        const idx = Math.floor(rng() * total);
-        if (idx === excludeIndex) continue;
-        const cell = board.cells[idx];
-        if (!cell.mine) {
-          cell.mine = true;
+    let current = board.cells[startIndex];
+    current.mine = true;
+    let placed = 1;
+
+    // --- ランダムウォーク ---
+    while (placed < mineCount) {
+
+      // 揺れを大きくした 16方向
+      const dirs = [
+        [-1,0],[1,0],[0,-1],[0,1],
+        [-1,-1],[-1,1],[1,-1],[1,1],
+
+      ];
+
+      // ★ 1ステップで複数回歩く（揺れ強化）
+      const steps = 1 + Math.floor(rng() * 3); // 1〜3回歩く
+
+      for (let i = 0; i < steps; i++) {
+
+        const [dr, dc] = dirs[Math.floor(rng() * dirs.length)];
+        const rr = current.r + dr;
+        const cc = current.c + dc;
+
+        if (rr < 0 || cc < 0 || rr >= board.rows || cc >= board.cols) {
+          continue;
+        }
+
+        const next = board.getCell(rr, cc);
+
+        if (!next.mine) {
+          next.mine = true;
           placed++;
+          if (placed >= mineCount) break;
         }
-      }
 
-      // --- 連結チェック ---
-      if (this._isSingleContinent(board)) {
-        return; // 成功
-      }
-      // 失敗ならリトライ
-    }
-  }
-
-  _isSingleContinent(board) {
-    // 地雷セルを探す
-    const mines = board.cells.filter(c => c.mine);
-    if (mines.length === 0) return false;
-
-    // BFS/DFSで最初の地雷から連結成分を探索
-    const visited = new Set();
-    const start = mines[0];
-    const stack = [start];
-    visited.add(start);
-
-    while (stack.length > 0) {
-      const cur = stack.pop();
-      for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-          if (dr === 0 && dc === 0) continue;
-          const rr = cur.r + dr, cc = cur.c + dc;
-          if (rr < 0 || cc < 0 || rr >= board.rows || cc >= board.cols) continue;
-          const nb = board.getCell(rr, cc);
-          if (nb.mine && !visited.has(nb)) {
-            visited.add(nb);
-            stack.push(nb);
-          }
-        }
+        current = next;
       }
     }
-
-    // すべての地雷が訪問済みなら「大陸」
-    return visited.size === mines.length;
   }
 }
 //  3連のみ
@@ -6683,8 +6678,6 @@ class MinMaxEuclidDistanceRule extends NumberRule {
 }
 //形
 class MostCharacteristicShapeLabelRule extends NumberRule {
-
-
 
   calculate(cell, neighbors) {
     const mines = neighbors.filter(n => n.mine);

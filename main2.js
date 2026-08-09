@@ -195,7 +195,7 @@ isNumberCell(cell) {
   if (cell.mine) return false;
 
   // ラベルセルは数字扱いしない
-  if (cell.isLabel) return false;
+ //if (cell.isLabel) return false;
 
   // ゼロセルは数字扱いしない
   if (this.isZero(cell)) return false;
