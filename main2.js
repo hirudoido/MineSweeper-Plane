@@ -57,6 +57,33 @@ function normalizeMinesForRule(rows, cols, mines, placementKey) {
     return Math.max(mines, rows);
   }
 
+// ★ NEW：CrossBridgeSimple（正方形＋長方形対応）
+if (placementKey === "CrossBridgeSimple") {
+
+  // 正方形の場合は行数(=列数)の倍数に丸める
+  if (rows === cols) {
+    return Math.round(mines / rows) * rows;
+  }
+
+  // 長方形の場合：rows と cols の線形結合に丸める
+  const R = rows;
+  const C = cols;
+
+  // 探索範囲（最大10本まで）
+  const candidates = [];
+
+  for (let v = 0; v <= 10; v++) {
+    for (let h = 0; h <= 10; h++) {
+      const value = v * R + h * C;
+      candidates.push({ value, v, h });
+    }
+  }
+
+  // mines に最も近い線形結合を選ぶ
+  candidates.sort((a, b) => Math.abs(a.value - mines) - Math.abs(b.value - mines));
+
+  return candidates[0].value;
+}
   // ★ NEW：RowConnected + スライド3×3空白禁止
   // ★ RowConnected + スライド3×3空白禁止
 if (placementKey === "RowConnectedWith3x3") {
@@ -112,6 +139,7 @@ class Cell {
     this.el = null;
     
     this.displayRule = null;
+    this.explorationRules = null;
 
   }
 }
@@ -230,6 +258,7 @@ async init() {
 
   // ★ ここでセルごとの表示ルールを割り当てる
   this.assignDisplayRules(rng);
+  this.assignExplorationRules(rng);
 
 
   this._calculateNumbers();
@@ -289,6 +318,38 @@ assignDisplayRules(rng) {
   for (const cell of this.board.cells) {
     const idx = Math.floor(rng() * selected.length);
     cell.displayRule = selected[idx];
+  }
+}
+assignExplorationRules(rng) {
+  const explore = document.getElementById("explore").value;
+
+  // ★ ルール候補を決める
+  let allRules;
+  allRules = [1,2,3,4,5,6,7,8,9,10]; // 全部
+  /*if (number === "CompositeCell2") {
+    allRules = [2,3,4,5,6,7,8,9,10]; // 1 を除外
+  } else {
+    allRules = [1,2,3,4,5,6,7,8,9,10]; // 全部
+  }*///
+
+  // ★ 選ぶ個数を決める
+  let pickCount = 10;
+  //if (number === "CompositeCell2") pickCount = 2;
+  //if (number === "CompositeCell5") pickCount = 5;
+
+  // ★ ランダムに pickCount 個だけ選ぶ
+  const selected = [];
+  while (selected.length < pickCount) {
+    const r = allRules[Math.floor(rng() * allRules.length)];
+    if (!selected.includes(r)) selected.push(r);
+  }
+
+  console.log("探索今回選ばれたルール:", selected);
+
+  // ★ 盤面の各セルにランダムで割り当てる
+  for (const cell of this.board.cells) {
+    const idx = Math.floor(rng() * selected.length);
+    cell.explorationRule = selected[idx];
   }
 }
     // --- ヒント適用 ---
@@ -407,7 +468,7 @@ d.addEventListener("mouseenter", () => {
   const ns = this._getNeighbors(cell);
   for (const nb of ns) {
     //ルールによって色を変える
-   let skip = ["clusterDetect","RippleImmutable", "UntilMine5x5Immutable","RandomBlindSpot","CrossBlindSpot"];
+   let skip = ["clusterDetect","RippleImmutable", "UntilMine5x5Immutable","RandomBlindSpot","CrossBlindSpot","EvenOddImmutable"];
     //!skip.includes(search)
      let  search =document.getElementById("explore").value;
     if(skip.includes(search)){  
@@ -492,6 +553,10 @@ _getNeighbors(cell) {
   }
    if (search =="CrossBlindSpot") {
     const cross = new Cross2Explore();
+    return cross.neighbors(this.board, cell.r, cell.c);
+  }
+  if (search =="EvenOddImmutable") {
+    const cross = new CrossStencilExplore();
     return cross.neighbors(this.board, cell.r, cell.c);
   }
   return this.explore.neighbors(this.board, cell.r, cell.c);
@@ -740,7 +805,7 @@ if (numberKey === "CompositeCell"||numberKey === "CompositeCell2"
   const seed = document.getElementById("seed").value;
 
   currentGame = new Game(rows, cols, mines, { placement, explore, number });
-  console.log(mines);
+  //console.log(mines);
   await currentGame.init(seed);
 
   drawManager.init();

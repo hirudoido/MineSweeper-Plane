@@ -2627,6 +2627,336 @@ class IceCrackPlacement extends PlacementStrategy {
     return r >= 0 && c >= 0 && r < board.rows && c < board.cols;
   }
 }
+// ★ 路線
+class LinePlacement extends PlacementStrategy {
+
+  // --- トーラス判定 ---
+  isTorus(board) {
+    const left = board.getCell(0, 0);
+    const ns = neighbors8(board, left);
+    return ns.some(n => n.c === board.cols - 1); // 左端の左が右端ならトーラス
+  }
+
+  // --- 非トーラス neighbors8 ---
+  neighbors8Raw(board, cell) {
+    const out = [];
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const rr = cell.r + dr;
+        const cc = cell.c + dc;
+        if (rr < 0 || cc < 0 || rr >= board.rows || cc >= board.cols) continue;
+        out.push(board.getCell(rr, cc));
+      }
+    }
+    return out;
+  }
+
+  // --- 次数（非トーラス） ---
+  degreeRaw(board, cell) {
+    return this.neighbors8Raw(board, cell).filter(c => c.mine).length;
+  }
+
+  // --- 経路延長判定（非トーラス） ---
+  canExtendToRaw(board, current, nb, start) {
+    if (nb.mine) return false;
+
+    const around = this.neighbors8Raw(board, nb).filter(c => c.mine);
+    if (around.length >= 2) return false; // 分岐禁止
+
+    if (nb === start) return false; // ループ禁止
+
+    return true;
+  }
+
+  // --- メイン処理 ---
+  place(board, mineCount, rng, excludeIndex = -1) {
+    const total = board.rows * board.cols;
+    let placed = 0;
+    let retries = 0;
+    const MAX_RETRY = 5000;
+
+    const torus = this.isTorus(board);
+    console.log("トーラス判定:", torus);
+
+    // neighbors の選択
+    const neighbors = torus
+      ? (cell) => this.neighbors8Raw(board, cell)
+      : (cell) => neighbors8(board, cell);
+
+    const degree = torus
+      ? (cell) => this.degreeRaw(board, cell)
+      : (cell) => degree(board, cell);
+
+    const canExtendTo = torus
+      ? (cur, nb, start) => this.canExtendToRaw(board, cur, nb, start)
+      : (cur, nb, start) => canExtendTo(board, cur, nb, start);
+
+    while (placed < mineCount && retries < MAX_RETRY) {
+      retries++;
+
+      // 盤面クリア
+      for (const c of board.cells) c.mine = false;
+      placed = 0;
+
+      // --- スタートセル選択 ---
+      let start = null;
+      for (let tries = 0; tries < 300; tries++) {
+        const idx = Math.floor(rng() * total);
+        const cand = board.cells[idx];
+        if (cand.mine) continue;
+        if (excludeIndex >= 0 && board.cells[excludeIndex] === cand) continue;
+        if (neighbors(cand).some(n => n.mine)) continue;
+        if (degree(cand) > 1) { // 次数2以上は不適格
+          start = null;
+          break;
+        }
+        start = cand;
+        break;
+      }
+      if (!start) continue;
+
+      // スタート確定
+      start.mine = true;
+      placed++;
+      let current = start;
+
+      // --- 経路を伸ばす ---
+      while (placed < mineCount) {
+        const cands = neighbors(current)
+          .filter(nb => canExtendTo(current, nb, start));
+
+        if (cands.length === 0) break;
+
+        // 自由度の少ない候補を優先
+        cands.sort((a, b) =>
+          neighbors(a).filter(x => !x.mine).length -
+          neighbors(b).filter(x => !x.mine).length
+        );
+
+        const next = cands[Math.floor(rng() * Math.min(3, cands.length))];
+        next.mine = true;
+        placed++;
+        current = next;
+      }
+
+      if (placed >= mineCount) break;
+    }
+
+    // --- 保険補充（孤立セルで埋める） ---
+    while (placed < mineCount) {
+      for (const cell of board.cells) {
+        if (cell.mine) continue;
+        if (excludeIndex >= 0 && board.cells[excludeIndex] === cell) continue;
+        if (neighbors(cell).some(n => n.mine)) continue;
+        cell.mine = true;
+        placed++;
+        if (placed >= mineCount) break;
+      }
+    }
+  }
+}
+//線の交わり
+class CrossBridgeSimplePlacement extends PlacementStrategy {
+
+  place(board, mineCount, rng, excludeIndex = -1) {
+
+    const rows = board.rows;
+    const cols = board.cols;
+
+    // --- 盤面クリア ---
+    for (const c of board.cells) c.mine = false;
+
+let verticalCount = 0;
+let horizontalCount = 0;
+
+// --- 正方形の場合 ---
+if (rows === cols) {
+
+  const N = rows;
+  const totalBridges = mineCount / N;
+
+  if (mineCount % N !== 0) {
+    console.log("この地雷数ではブリッジを組めません（正方形の辺の倍数ではない）");
+    return;
+  }
+
+  verticalCount   = Math.ceil(totalBridges / 2);
+  horizontalCount = Math.floor(totalBridges / 2);
+
+  console.log(`[正方形] verticalCount=${verticalCount}, horizontalCount=${horizontalCount}`);
+
+} else {
+
+  // --- 長方形の場合 ---
+  const R = rows;
+  const C = cols;
+
+  const candidates = [];
+
+  // 総当たりで v,h を探す（最大10本まで）
+  for (let v = 0; v <= 10; v++) {
+    for (let h = 0; h <= 10; h++) {
+      if (v * R + h * C === mineCount) {
+        candidates.push({ v, h });
+      }
+    }
+  }
+
+  if (candidates.length === 0) {
+    console.log("この地雷数ではブリッジを組めません（長方形の線形結合が成立しない）");
+    return;
+  }
+
+  // 縦横の差が小さい順 → 本数が少ない順
+  candidates.sort((a, b) => {
+    const diffA = Math.abs(a.v - a.h);
+    const diffB = Math.abs(b.v - b.h);
+    if (diffA !== diffB) return diffA - diffB;
+    return (a.v + a.h) - (b.v + b.h);
+  });
+
+  verticalCount   = candidates[0].v;
+  horizontalCount = candidates[0].h;
+
+  console.log(`[長方形] verticalCount=${verticalCount}, horizontalCount=${horizontalCount}`);
+}
+
+    // --- 揺れを弱める ---
+    const weakShake = () => {
+      const choices = [0];
+      if (rng() < 0.5) choices.push(1);
+      if (rng() < 0.5) choices.push(-1);
+      return choices;
+    };
+
+    // --- 横ブリッジ ---
+    const makeHorizontal = (startR) => {
+      let r = startR;
+      const path = [];
+
+      for (let c = 0; c < cols; c++) {
+        path.push([r, c]);
+
+        if (c < cols - 1) {
+          const choices = weakShake();
+          const valid = choices.filter(delta => {
+            const nr = Math.max(0, Math.min(rows - 1, r + delta));
+            const nextCell = board.getCell(nr, c + 1);
+            return !nextCell.mine;
+          });
+
+          if (valid.length === 0) return null;
+
+          const delta = valid[Math.floor(rng() * valid.length)];
+          r = Math.max(0, Math.min(rows - 1, r + delta));
+        }
+      }
+
+      return path;
+    };
+
+    // --- 縦ブリッジ ---
+    const makeVertical = (startC) => {
+      let c = startC;
+      const path = [];
+
+      for (let r = 0; r < rows; r++) {
+        path.push([r, c]);
+
+        if (r < rows - 1) {
+          const choices = weakShake();
+          const valid = choices.filter(delta => {
+            const nc = Math.max(0, Math.min(cols - 1, c + delta));
+            const nextCell = board.getCell(r + 1, nc);
+            return !nextCell.mine;
+          });
+
+          if (valid.length === 0) return null;
+
+          const delta = valid[Math.floor(rng() * valid.length)];
+          c = Math.max(0, Math.min(cols - 1, c + delta));
+        }
+      }
+
+      return path;
+    };
+
+    // --- 縦ブリッジを先に配置（衝突防止） ---
+    const usedCols = new Set();
+    for (let i = 0; i < verticalCount; i++) {
+
+      let path = null;
+      let retry = 0;
+
+      while (!path && retry < 20) {
+        let c;
+        do {
+          c = Math.floor(rng() * cols);
+        } while (usedCols.has(c));
+
+        path = makeVertical(c);
+        retry++;
+      }
+
+      if (!path) {
+        console.log("縦ブリッジの生成に失敗しました。再調整不可 → あきらめます");
+
+      }
+
+      usedCols.add(path[0][1]);
+
+      for (const [rr, cc] of path) {
+        if (rr * cols + cc !== excludeIndex) {
+          board.getCell(rr, cc).mine = true;
+        }
+      }
+    }
+
+    // --- 横ブリッジ配置 ---
+    const usedRows = new Set();
+    for (let i = 0; i < horizontalCount; i++) {
+
+      let path = null;
+      let retry = 0;
+
+      while (!path && retry < 20) {
+        let r;
+        do {
+          r = Math.floor(rng() * rows);
+        } while (usedRows.has(r));
+
+        path = makeHorizontal(r);
+        retry++;
+      }
+
+      if (!path) {
+        console.log("横ブリッジの生成に失敗しました。再調整不可 → あきらめます");
+      }
+
+      usedRows.add(path[0][0]);
+
+      for (const [rr, cc] of path) {
+        if (rr * cols + cc !== excludeIndex) {
+          board.getCell(rr, cc).mine = true;
+        }
+      }
+    }
+
+    // --- 最後に mineCount が一致しているか確認 ---
+    let placed = 0;
+    for (const cell of board.cells) {
+      if (cell.mine) placed++;
+    }
+
+    console.log(`placed: ${placed}, mineCount: ${mineCount}`);
+
+    if (placed !== mineCount) {
+      console.log(`地雷数が一致しません: 期待=${mineCount}, 実際=${placed} → あきらめます`);
+          throw new Error("配置失敗");
+    }
+  }
+}
 
 
 //探索範囲  の実装
@@ -3644,7 +3974,7 @@ class RadiusByDisplayRuleExplore extends ExploreStrategy {
     const cell = board.getCell(r, c);
 
     // displayRule を半径として使う
-    let radius = Math.floor((cell.displayRule / 3)+1); // cell.displayRule;
+    let radius = Math.floor((cell.explorationRule / 3)+1); // cell.displayRule;
 
     // displayRule=10 は特別扱い（最大半径 or ランダム）
 
@@ -3674,7 +4004,7 @@ class ShogiPieceExplore extends ExploreStrategy {
 
   neighbors(board, r, c) {
     const cell = board.getCell(r, c);
-    const rule = cell.displayRule;
+    const rule = cell.explorationRule;
     const out = new Set();
 
     // 1マス移動の方向
@@ -3813,7 +4143,7 @@ class ChessPieceExplore extends ExploreStrategy {
 
   neighbors(board, r, c) {
     const cell = board.getCell(r, c);
-    const rule = cell.displayRule;
+    const rule = cell.explorationRule;
     const out = new Set();
 
     // ナイト
@@ -3919,7 +4249,7 @@ class FairyChessExplore extends ExploreStrategy {
 
   neighbors(board, r, c) {
     const cell = board.getCell(r, c);
-    const rule = cell.displayRule;
+    const rule = cell.explorationRule;
     const out = new Set();
     // 中心十字を除外する関数
     const isCenterCross = (rr, cc) => {
@@ -4286,6 +4616,67 @@ class BuffaloExplore extends ExploreStrategy {
     }
 
     return Array.from(out);
+  }
+}
+//
+class CrossStencilExplore extends ExploreStrategy {
+  neighbors(board, r, c) {
+    const moves = [
+      [-1, 0],[-1, 1],[-1,-1],[-2,0], // 上
+      [1, 0],[1, 1],[1,-1],[2,0],  // 下
+      [0, -1], [0,-2],// 左
+      [0, 1], [0,2] // 右
+    ];
+
+    return moves
+      .map(([dr, dc]) => [r + dr, c + dc])
+      .filter(([rr, cc]) =>
+        rr >= 0 && cc >= 0 &&
+        rr < board.rows && cc < board.cols
+      )
+      .map(([rr, cc]) => board.getCell(rr, cc));
+  }
+}
+//ランダムで3*3 十字を探す
+class EvenOddExplore extends ExploreStrategy {
+
+  neighbors(board, r, c) {
+    const cell = board.getCell(r, c);
+    const rule = cell.explorationRule;
+    const out = new Set();
+
+    // --- 偶数：3×3（中心除く） ---
+    if (rule % 2 === 0) {
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue; // 中心除外
+          const nb = this.getCellRaw(board, r + dr, c + dc);
+          if (nb) out.add(nb);
+        }
+      }
+    }
+
+    // --- 奇数：十字（上下左右に2マス） ---
+    else {
+      const dirs = [
+        [-1, 0], [-2, 0], // 上に2マス
+        [1, 0], [2, 0],   // 下に2マス
+        [0, -1], [0, -2], // 左に2マス
+        [0, 1], [0, 2],   // 右に2マス
+      ];
+
+      for (const [dr, dc] of dirs) {
+        const nb = this.getCellRaw(board, r + dr, c + dc);
+        if (nb) out.add(nb);
+      }
+    }
+
+    return Array.from(out);
+  }
+
+  getCellRaw(board, r, c) {
+    if (r < 0 || c < 0 || r >= board.rows || c >= board.cols) return null;
+    return board.cells[r * board.cols + c];
   }
 }
 
@@ -6520,7 +6911,8 @@ RowConnectedWith3x3:RowConnectedWith3x3Placement,
 MaximumDistance:MaximumDistancePlacement,
 RangeDistance:RangeDistancePlacement,
 IceCrack:IceCrackPlacement,
-
+Line :LinePlacement,
+CrossBridgeSimple :CrossBridgeSimplePlacement,
 };
 
 const exploreMap = {
@@ -6563,6 +6955,9 @@ FairyChess:FairyChessExplore,
     Eagle :EagleExplore,
     Ship:ShipExplore,
 Buffalo:BuffaloExplore,
+ CrossStencil:CrossStencilExplore,
+ EvenOdd : EvenOddExplore,
+ EvenOddImmutable : EvenOddExplore,
 };
 
 const numberMap = {
